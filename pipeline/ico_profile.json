@@ -20,16 +20,45 @@
       "USRDIR/ICO/ico.psarc"
     ]
   },
+  "icon": {
+    "_comment": "ico.exe's icon is cut from the user's own ICON0.PNG: band 0 = the ICO logo row of the collection art.",
+    "source": "ICON0.PNG",
+    "band": 0
+  },
   "ppu": {
     "code_end": "0x3BC7B4"
   },
   "spu_images": [
-    {"name": "spu_0000_at_00464380", "sha256": "b75ddb2c345196afea95524caa3408ae74d03eb282e3e0dc22733229bfdd6aa7", "code_end": null},
-    {"name": "spu_0001_at_00465C80", "sha256": "c45c773e46a9f5e8e15f03310b457dcaed940d0b46fba414b7c39f3ec8050742", "code_end": "0xAD68"},
-    {"name": "spu_0002_at_0046E480", "sha256": "2bf63b96000318de2d8dcf238521bd1bbc4d0ec1788c0e3859120674ecc99c97", "code_end": "0x7E48"},
-    {"name": "spu_0003_at_00473600", "sha256": "a7d44b015c5c9dca4f8523931ed6d0786bb5058b0757fc8484e39a0cbea5ed82", "code_end": "0x10568"},
-    {"name": "spu_0004_at_00483D00", "sha256": "1cf29ea3617e57144c0cf561017dc36debc7b91672ce1f16d46596ef3c7e8b12", "code_end": "0xAD30"},
-    {"name": "spu_0005_at_0048CC80", "sha256": "5b6a086a6c226c1c3eb49197bb494ccf9b1c66cf0ae78da007d7f8a33279c5a7", "code_end": null}
+    {
+      "name": "spu_0000_at_00464380",
+      "sha256": "b75ddb2c345196afea95524caa3408ae74d03eb282e3e0dc22733229bfdd6aa7",
+      "code_end": null
+    },
+    {
+      "name": "spu_0001_at_00465C80",
+      "sha256": "c45c773e46a9f5e8e15f03310b457dcaed940d0b46fba414b7c39f3ec8050742",
+      "code_end": "0xAD68"
+    },
+    {
+      "name": "spu_0002_at_0046E480",
+      "sha256": "2bf63b96000318de2d8dcf238521bd1bbc4d0ec1788c0e3859120674ecc99c97",
+      "code_end": "0x7E48"
+    },
+    {
+      "name": "spu_0003_at_00473600",
+      "sha256": "a7d44b015c5c9dca4f8523931ed6d0786bb5058b0757fc8484e39a0cbea5ed82",
+      "code_end": "0x10568"
+    },
+    {
+      "name": "spu_0004_at_00483D00",
+      "sha256": "1cf29ea3617e57144c0cf561017dc36debc7b91672ce1f16d46596ef3c7e8b12",
+      "code_end": "0xAD30"
+    },
+    {
+      "name": "spu_0005_at_0048CC80",
+      "sha256": "5b6a086a6c226c1c3eb49197bb494ccf9b1c66cf0ae78da007d7f8a33279c5a7",
+      "code_end": null
+    }
   ],
   "spu_overlays": [
     {

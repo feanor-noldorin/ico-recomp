@@ -66,3 +66,6 @@ captures/
 .vs/
 .vscode/
 *.user
+
+# Game icon: generated at build time from the user's own ICON0.PNG
+port/ico.ico

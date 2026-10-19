@@ -213,9 +213,9 @@ and must not be redistributed. Decryption is done by your own copy of RPCS3.
 
 ICO is © Sony Interactive Entertainment. This project is not affiliated with
 or endorsed by Sony or Team ICO / genDESIGN. The code in this repository is
-under the [MIT License](LICENSE). The icon of the installer and of `ico.exe`
-(`assets/ico.ico`) is made from the ICO cover artwork, © Sony Interactive
-Entertainment, and is not covered by the MIT License.
+under the [MIT License](LICENSE). The icon of the installed `ico.exe` is not
+part of this repository either: the installer cuts it from the `ICON0.PNG` of
+your own copy.
 
 ---
 

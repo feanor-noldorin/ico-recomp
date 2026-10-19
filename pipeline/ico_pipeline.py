@@ -323,6 +323,25 @@ def lift_spu(a, prof, py, tools, elf, port) -> None:
          "--register-fn", "port_spu_register_all", "--constructor", "--title", "ICO"])
 
 
+def make_icon(a, prof, port) -> None:
+    """ico.exe's icon, made from the user's own PS3_GAME/ICON0.PNG (the ICO logo
+    band of the collection art). The project ships no game art; without the
+    PNG, or if the conversion fails, the exe is built without an icon."""
+    ic = prof.get("icon") or {}
+    src = a.game_dir / ic.get("source", "ICON0.PNG")
+    out = port / "ico.ico"
+    try:
+        if not src.exists():
+            raise PipelineError(f"{src.name} not found")
+        run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", HERE / "make_icon.ps1",
+             "-Source", src, "-Out", out, "-Band", str(ic.get("band", 0))])
+    except Exception as e:                  # noqa: BLE001 -- an icon is never worth failing the install
+        warn(f"Could not make the game icon ({e}); ico.exe will have the default icon.")
+        rc = port / "app.rc"
+        rc.write_text("".join(l for l in rc.read_text(encoding="utf-8").splitlines(True)
+                              if " ICON " not in l), encoding="utf-8")
+
+
 def build(a, port, env) -> Path:
     bld = a.work / "build"
     flags = "/O2 /Ob2 /DNDEBUG /clang:-msse4.1"
@@ -428,6 +447,7 @@ def main() -> int:
         step(6)
         lift_spu(a, prof, py, tools, elf, port)
         step(9)
+        make_icon(a, prof, port)
         exe = build(a, port, env)
         step(11)
         install(a, prof, exe, elf)

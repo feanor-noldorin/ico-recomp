@@ -12,7 +12,6 @@
     <Description>ICO PC Port Setup</Description>
     <Version>0.1.0</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>../../assets/ico.ico</ApplicationIcon>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <!-- One self-contained exe, like the P.T. setup: no .NET install needed. -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>

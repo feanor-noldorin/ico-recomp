@@ -1,7 +1,7 @@
 // Windows resources for ico.exe: the icon and the version block.
 #include <winver.h>
 
-1 ICON "ico.ico"
+1 ICON "ico.ico"   // written by pipeline/make_icon.ps1 from the user's ICON0.PNG
 
 VS_VERSION_INFO VERSIONINFO
  FILEVERSION 0,1,0,0

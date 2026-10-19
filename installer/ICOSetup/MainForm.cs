@@ -41,7 +41,6 @@ sealed class MainForm : Form
         // The window sizes itself to its content: every field is visible without scrolling.
         AutoSize = true;
         AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
         BuildUi();
         Prefill();
         RefreshTools();
@@ -60,18 +59,11 @@ sealed class MainForm : Form
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, ContentWidth));
         Controls.Add(root);
 
-        var header = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 2) };
-        if (Icon != null)
-            header.Controls.Add(new PictureBox
-            {
-                Image = new Icon(Icon, 48, 48).ToBitmap(), SizeMode = PictureBoxSizeMode.Zoom,
-                Size = new Size(48, 48), Margin = new Padding(0, 0, 10, 0),
-            });
-        header.Controls.Add(new Label
+        var header = new Label
         {
             Text = "ICO — PC Port", Font = new Font("Segoe UI Semibold", 16f), AutoSize = true,
-            Anchor = AnchorStyles.Left, Margin = new Padding(0, 10, 0, 0),
-        });
+            Margin = new Padding(0, 0, 0, 2),
+        };
         root.Controls.Add(header);
         root.Controls.Add(new Label { Text = S.Intro, AutoSize = true, MaximumSize = new Size(680, 0), Margin = new Padding(0, 0, 0, 8) });
 

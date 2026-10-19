@@ -209,9 +209,8 @@ cópia do RPCS3.
 
 ICO é © Sony Interactive Entertainment. Este projeto não tem vínculo nem aval
 da Sony nem da Team ICO / genDESIGN. O código deste repositório está sob a
-[licença MIT](LICENSE). O ícone do instalador e do `ico.exe`
-(`assets/ico.ico`) foi feito a partir da arte da capa do ICO, © Sony
-Interactive Entertainment, e não está coberto pela licença MIT.
+[licença MIT](LICENSE). O ícone do `ico.exe` instalado também não faz parte
+deste repositório: o instalador o recorta do `ICON0.PNG` da sua própria cópia.
 
 ---
 

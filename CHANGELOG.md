@@ -13,7 +13,8 @@ cinematic and gameplay on Windows, installed from the user's own disc dump.
   checks your files by SHA-256, recompiles the game on your PC and creates
   desktop/Start menu shortcuts. English UI; the window fits every field
   without scrolling.
-- **Icon**: the installer and the game (`ico.exe`) use the ICO cover art icon.
+- **Game icon**: the installed `ico.exe` gets the ICO logo, cut at build time
+  from the `ICON0.PNG` of the user's own copy (no game art ships with the project).
 - **Two ways to get `ICO.elf`**: automatic decryption with your RPCS3
   (`rpcs3 --no-gui --decrypt`, done on a copy, the dump is never written to),
   or select a file you decrypted by hand.
