@@ -81,7 +81,7 @@ Legend: ✅ working · 🟢 good · 🟡 partial · ⚪ untested · ❌ missing
 5. Click **Install**. The first install takes **6–30 minutes** depending on the PC; most of
    it is compiling. *Show details* shows the full log, also saved to
    `<install>\logs\install.log`.
-6. Click **Play**, or use the **ICO** shortcut on the desktop / Start menu.
+6. Click **Play**, or use the **ICO** shortcut on the desktop / Start menu. The installed game is `ico.exe`.
 
 To **update**, run the new installer and select the same installation
 folder. Your `ico.ini` edits and saves are kept.
@@ -102,7 +102,7 @@ the keyboard fallback is:
 | ▢ Square | A | | Select | Tab |
 | △ Triangle | S | | | |
 
-Run settings live in `ico.ini` next to `ICO.exe`; see
+Run settings live in `ico.ini` next to `ico.exe`; see
 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md). The game's log is
 `<install>\logs\ico.log` — attach it to bug reports.
 
@@ -110,8 +110,11 @@ Run settings live in `ico.ini` next to `ICO.exe`; see
 
 ## 🐞 Known issues
 
-- **Closing the window may not end the process.** If `ICO.exe` stays in Task
+- **Closing the window may not end the process.** If `ico.exe` stays in Task
   Manager after you close it, end it there before starting again.
+- **Rare crash at start-up**: in about 1 of 3 test launches the game closed
+  within its first seconds (Windows reports `CoreMessaging.dll`, exception
+  `0xe0464645`). Start it again; it is being investigated.
 - **Only the US release** (BCUS98259) is supported. Other regions fail the
   hash check: the code cut points are specific to this executable.
 - **Short audio glitches** can happen when a music track starts.
@@ -158,7 +161,7 @@ First public build. Highlights (full list in [CHANGELOG.md](CHANGELOG.md)):
                             ▼
          CMake + Ninja + clang-cl  ◄── port/ (main.cpp, stubs.cpp) + ps3recomp runtime
                             ▼
-                <install>\ICO.exe  +  ico.ini  +  vfs\PS3_GAME (your data)
+                <install>\ico.exe  +  ico.ini  +  vfs\PS3_GAME (your data)
 ```
 
 | Stage | Tool (ps3recomp `tools/`) | Output |
@@ -167,7 +170,7 @@ First public build. Highlights (full list in [CHANGELOG.md](CHANGELOG.md)):
 | PPU lift | `ppu_lifter.py --code-end 0x3BC7B4` | ~64 MB of C++ (2 chunks) |
 | HLE table | `gen_hle_nids.py --all` | firmware NID → handler map |
 | SPU | `extract_spu_images.py`, `spu_lifter.py`, `rebase_spu_elf.py`, `build_spu_workloads.py` | 6 images + 2 overlays, registry |
-| Build | CMake / Ninja / clang-cl | `ICO.exe` |
+| Build | CMake / Ninja / clang-cl | `ico.exe` |
 
 Everything the pipeline needs to know about the supported release — file
 hashes, the PPU/SPU code ends, SPU overlay bases and extra entry points, the
@@ -210,7 +213,9 @@ and must not be redistributed. Decryption is done by your own copy of RPCS3.
 
 ICO is © Sony Interactive Entertainment. This project is not affiliated with
 or endorsed by Sony or Team ICO / genDESIGN. The code in this repository is
-under the [MIT License](LICENSE).
+under the [MIT License](LICENSE). The icon of the installer and of `ico.exe`
+(`assets/ico.ico`) is made from the ICO cover artwork, © Sony Interactive
+Entertainment, and is not covered by the MIT License.
 
 ---
 

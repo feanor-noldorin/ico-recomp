@@ -1,6 +1,6 @@
 # ⚙️ Run settings (`ico.ini`)
 
-`ICO.exe` reads `ico.ini` from its own folder at start-up. Every `KEY=VALUE`
+`ico.exe` reads `ico.ini` from its own folder at start-up. Every `KEY=VALUE`
 line becomes an environment variable for the game **unless that variable is
 already set**, so you can still override any of them for one run from a
 shell. Lines starting with `;` are comments. Re-running the installer keeps
@@ -38,6 +38,6 @@ The variables of the ps3recomp runtime itself are documented in the
 
 ```powershell
 cd C:\Games\ICO
-.\ICO.exe                      # uses data\ICO.elf and ico.ini
-.\ICO.exe D:\other\ICO.elf     # another ELF
+.\ico.exe                      # uses data\ICO.elf and ico.ini
+.\ico.exe D:\other\ICO.elf     # another ELF
 ```

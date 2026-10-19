@@ -225,6 +225,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 # link language from the generated C would leave the C++ standard library out.
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)
 
+# The installed game is ico.exe (app.rc gives it the icon).
+set_target_properties(${PROJECT_NAME} PROPERTIES OUTPUT_NAME ico)
+
 # Windows system import libraries. dbghelp symbolizes crash-handler addresses
 # against the PDB, user32 and gdi32 are what the backend's window and its GDI
 # present are made of, and winmm is timeBeginPeriod. None of the four names

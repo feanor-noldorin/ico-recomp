@@ -680,7 +680,7 @@ static void harness_guest_caller(uint32_t opd, uint64_t a0, uint64_t a1,
 /* ---------------------------------------------------------------------------
  * ico.ini
  *
- * The installer writes ico.ini beside ICO.exe: one KEY=VALUE per line, ';'
+ * The installer writes ico.ini beside ico.exe: one KEY=VALUE per line, ';'
  * comments. Each pair becomes an environment variable unless the variable is
  * already set, so a shell can still override any of them for one run. This
  * is how the shortcut gets the run settings (VFS root, dev_flash, the RSX

@@ -70,21 +70,21 @@ Legenda: ✅ funciona · 🟢 bom · 🟡 parcial · ⚪ não testado · ❌ fal
    da pasta `PS3_GAME`.
 2. **Instale o RPCS3** e o **firmware do PS3** (File → Install Firmware).
 3. **Baixe o `ICO.PC.Port.Setup.exe`** em [Releases](../../releases) e execute-o.
-4. No instalador:
-   1. **Seu jogo**: selecione a pasta `PS3_GAME` (ou a pasta do dump que a contém).
-   2. **Decriptar o ICO.self**: mantenha *"Decriptar automaticamente com o meu RPCS3"*
-      e aponte para o `rpcs3.exe`, **ou** escolha *"Eu já decriptei"* e selecione o seu
-      `ICO.elf` ([como decriptar manualmente](docs/DECRYPTING.md)).
-   3. **Firmware do PS3**: a pasta `dev_flash` do RPCS3 (preenchida sozinha
+4. No instalador (a interface é em inglês):
+   1. **1. Your game**: selecione a pasta `PS3_GAME` (ou a pasta do dump que a contém).
+   2. **2. Decrypt ICO.self**: mantenha *"Decrypt automatically with my RPCS3"*
+      e aponte para o `rpcs3.exe`, **ou** escolha *"I already decrypted it (ICO.elf)"*
+      e selecione o seu `ICO.elf` ([como decriptar manualmente](#decriptar-manualmente-pelo-rpcs3)).
+   3. **3. PS3 firmware**: a pasta `dev_flash` do RPCS3 (preenchida sozinha
       quando está ao lado do `rpcs3.exe`).
-   4. **Pasta de instalação**: um caminho curto, por exemplo `C:\Games`. O
+   4. **4. Installation folder**: um caminho curto, por exemplo `C:\Games`. O
       instalador cria a pasta `ICO` dentro dela.
-   5. **Ferramentas de compilação**: se algo aparecer com ✖, clique em
-      **Instalar...** e confirme.
-5. Clique em **Instalar**. A primeira instalação leva de **6 a 30 minutos**,
-   conforme o PC, e quase todo esse tempo é compilação. *Mostrar detalhes*
+   5. **Build tools**: se algo aparecer com ✖, clique em **Install...** e confirme.
+5. Clique em **Install**. A primeira instalação leva de **6 a 30 minutos**,
+   conforme o PC, e quase todo esse tempo é compilação. *Show details*
    exibe o log completo, que também fica salvo em `<instalação>\logs\install.log`.
-6. Clique em **Jogar**, ou use o atalho **ICO** na área de trabalho ou no menu Iniciar.
+6. Clique em **Play**, ou use o atalho **ICO** na área de trabalho ou no menu
+   Iniciar. O jogo instalado é o `ico.exe`.
 
 ### Decriptar manualmente pelo RPCS3
 
@@ -114,7 +114,7 @@ teclado funciona assim:
 | ▢ Quadrado | A | | Select | Tab |
 | △ Triângulo | S | | | |
 
-As configurações ficam no `ico.ini`, ao lado do `ICO.exe` (veja
+As configurações ficam no `ico.ini`, ao lado do `ico.exe` (veja
 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)). O log do jogo é
 `<instalação>\logs\ico.log`: anexe-o aos relatos de bug.
 
@@ -122,8 +122,11 @@ As configurações ficam no `ico.ini`, ao lado do `ICO.exe` (veja
 
 ## 🐞 Problemas conhecidos
 
-- **Fechar a janela pode não encerrar o processo.** Se o `ICO.exe` continuar
+- **Fechar a janela pode não encerrar o processo.** Se o `ico.exe` continuar
   no Gerenciador de Tarefas depois de fechado, finalize-o lá antes de abrir de novo.
+- **Crash raro na inicialização**: em cerca de 1 a cada 3 aberturas de teste
+  o jogo fechou nos primeiros segundos (o Windows aponta o `CoreMessaging.dll`,
+  exceção `0xe0464645`). Abra de novo; está sendo investigado.
 - **Só a versão dos EUA** (BCUS98259) é suportada. Outras regiões falham na
   verificação de hash, porque os pontos de corte do código são específicos desse executável.
 - **Falhas curtas de áudio** podem ocorrer quando uma faixa começa.
@@ -170,7 +173,7 @@ Primeiro build público. Destaques (lista completa em [CHANGELOG.md](CHANGELOG.m
                             ▼
          CMake + Ninja + clang-cl  ◄── port/ (main.cpp, stubs.cpp) + runtime ps3recomp
                             ▼
-              <instalação>\ICO.exe + ico.ini + vfs\PS3_GAME (seus dados)
+              <instalação>\ico.exe + ico.ini + vfs\PS3_GAME (seus dados)
 ```
 
 Tudo o que o pipeline precisa saber sobre a versão suportada fica em
@@ -206,7 +209,9 @@ cópia do RPCS3.
 
 ICO é © Sony Interactive Entertainment. Este projeto não tem vínculo nem aval
 da Sony nem da Team ICO / genDESIGN. O código deste repositório está sob a
-[licença MIT](LICENSE).
+[licença MIT](LICENSE). O ícone do instalador e do `ico.exe`
+(`assets/ico.ico`) foi feito a partir da arte da capa do ICO, © Sony
+Interactive Entertainment, e não está coberto pela licença MIT.
 
 ---
 

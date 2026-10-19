@@ -33,7 +33,7 @@ python -m venv .venv
 | `--game-dir` | `PS3_GAME` folder of the dump (or the folder containing it) |
 | `--rpcs3` / `--elf` | Decrypt `ICO.self` with RPCS3, **or** use an `ICO.elf` you decrypted |
 | `--dev-flash` | RPCS3's `dev_flash` (or the RPCS3 folder) |
-| `--install` | Output folder: `ICO.exe`, `ico.ini`, `data\`, `vfs\`, `logs\` |
+| `--install` | Output folder: `ico.exe`, `ico.ini`, `data\`, `vfs\`, `logs\` |
 | `--work` | Build folder (default `<install>\build`; safe to delete afterwards) |
 | `--link-mode copy\|junction` | Copy the ~1.7 GB ICO uses (default) or link `vfs\PS3_GAME` to the dump |
 | `--simd avx2\|sse41` | Instruction set of the build (default `avx2`, needs AVX2 + FMA) |

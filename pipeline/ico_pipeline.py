@@ -22,7 +22,7 @@ Steps (each prints a machine-readable "@@STEP i/n name" line for the installer)
   8  SPU registry    -> build_spu_workloads --skip-lift
   9  configure       -> CMake + Ninja + clang-cl (Visual Studio toolchain)
   10 compile
-  11 install         -> ICO.exe + ico.ini
+  11 install         -> ico.exe + ico.ini
 """
 
 from __future__ import annotations
@@ -33,6 +33,7 @@ import json
 import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -65,6 +66,25 @@ def log(msg: str) -> None:
 
 def warn(msg: str) -> None:
     print(f"@@WARN {msg}", flush=True)
+
+
+def rmtree(p: Path) -> None:
+    """shutil.rmtree that survives Windows' transient locks (antivirus, indexer)
+    and read-only files: retry a few times before giving up."""
+    def onerr(func, path, *_):
+        try:
+            os.chmod(path, stat.S_IWRITE)
+            func(path)
+        except OSError:
+            pass
+    for attempt in range(6):
+        if not p.exists():
+            return
+        shutil.rmtree(p, onerror=onerr)
+        if not p.exists():
+            return
+        time.sleep(0.5 * (attempt + 1))
+    raise PipelineError(f"Could not delete {p}: a file in it is in use. Close any program using it and retry.")
 
 
 def sha256(path: Path) -> str:
@@ -230,7 +250,7 @@ def lift_ppu(a, prof, py, tools, elf, port) -> None:
     step(4)
     rec = port / "recompiled"
     if rec.exists():
-        shutil.rmtree(rec)
+        rmtree(rec)
     run([py, tools / "ppu_lifter.py", elf,
          "--functions", out / "ICO.functions.json",
          "--hle-stubs", out / "ICO.imports.json",
@@ -254,7 +274,7 @@ def debase_includes(d: Path) -> None:
 
 def spu_lift(py, tools, elf: Path, outdir: Path, prefix: str, code_end, extra) -> None:
     if outdir.exists():
-        shutil.rmtree(outdir)
+        rmtree(outdir)
     outdir.mkdir(parents=True)
     cmd = [py, tools / "spu_lifter.py", elf, "--auto-functions", elf,
            "--symbol-prefix", prefix, "-o", outdir, "--report", outdir / "lift.json"]
@@ -269,7 +289,7 @@ def spu_lift(py, tools, elf: Path, outdir: Path, prefix: str, code_end, extra) -
 def lift_spu(a, prof, py, tools, elf, port) -> None:
     imgs = a.work / "spu_images"
     if imgs.exists():
-        shutil.rmtree(imgs)
+        rmtree(imgs)
     run([py, tools / "extract_spu_images.py", elf, "--output", imgs])
     spu = port / "spu"
     spu.mkdir(exist_ok=True)
@@ -325,15 +345,18 @@ def build(a, port, env) -> Path:
         if m:
             progress(100.0 * int(m.group(1)) / max(1, int(m.group(2))))
     run(["cmake", "--build", bld, "--parallel", str(a.jobs)], env=env, on_line=on_line)
-    exe = bld / "ICO.exe"
+    exe = bld / "ico.exe"
     if not exe.exists():
-        raise PipelineError("The build finished but ICO.exe was not produced.")
+        raise PipelineError("The build finished but ico.exe was not produced.")
     return exe
 
 
 def install(a, prof, exe, elf) -> None:
     a.install.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(exe, a.install / "ICO.exe")
+    for f in a.install.glob("*.exe"):     # an older install named it ICO.exe; keep one exact name
+        if f.name.lower() == "ico.exe" and f.name != "ico.exe":
+            f.unlink()
+    shutil.copyfile(exe, a.install / "ico.exe")
     data = a.install / "data"
     data.mkdir(exist_ok=True)
     shutil.copyfile(elf, data / "ICO.elf")
@@ -399,7 +422,7 @@ def main() -> int:
         step(3)
         port = a.work / "port"              # a private copy: the lift is written into it
         if port.exists():
-            shutil.rmtree(port)
+            rmtree(port)
         shutil.copytree(a.port, port)
         lift_ppu(a, prof, py, tools, elf, port)
         step(6)

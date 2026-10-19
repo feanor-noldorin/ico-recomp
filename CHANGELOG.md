@@ -11,7 +11,9 @@ cinematic and gameplay on Windows, installed from the user's own disc dump.
 - **`ICO.PC.Port.Setup.exe`**: one self-contained exe (no .NET install
   needed). Select your `PS3_GAME` folder, RPCS3 and an install folder; it
   checks your files by SHA-256, recompiles the game on your PC and creates
-  desktop/Start menu shortcuts. English and Brazilian Portuguese.
+  desktop/Start menu shortcuts. English UI; the window fits every field
+  without scrolling.
+- **Icon**: the installer and the game (`ico.exe`) use the ICO cover art icon.
 - **Two ways to get `ICO.elf`**: automatic decryption with your RPCS3
   (`rpcs3 --no-gui --decrypt`, done on a copy, the dump is never written to),
   or select a file you decrypted by hand.
@@ -20,7 +22,7 @@ cinematic and gameplay on Windows, installed from the user's own disc dump.
 - Game data is **copied** (~1.7 GB, only what ICO uses; not the 6 GB of Shadow
   of the Colossus) or, optionally, **linked** to the dump.
 - **AVX2 + FMA** build on CPUs that have them, **SSE4.1** build otherwise.
-- `ico.ini` beside `ICO.exe` holds the run settings; the game writes its log to
+- The installed game is **`ico.exe`**; `ico.ini` beside it holds the run settings; the game writes its log to
   `logs\ico.log` instead of opening a console window.
 
 ### Game (fixes since the first boot, all in this port or its ps3recomp branch)

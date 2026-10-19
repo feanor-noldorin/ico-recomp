@@ -38,7 +38,9 @@ sealed class MainForm : Form
         FormBorderStyle = FormBorderStyle.FixedSingle;
         MaximizeBox = false;
         StartPosition = FormStartPosition.CenterScreen;
-        ClientSize = new Size(720, 640);
+        // The window sizes itself to its content: every field is visible without scrolling.
+        AutoSize = true;
+        AutoSizeMode = AutoSizeMode.GrowAndShrink;
         try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
         BuildUi();
         Prefill();
@@ -49,17 +51,27 @@ sealed class MainForm : Form
 
     void BuildUi()
     {
+        const int ContentWidth = 700;
         var root = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill, ColumnCount = 1, Padding = new Padding(16, 12, 16, 12), AutoScroll = true,
+            Location = Point.Empty, ColumnCount = 1, Padding = new Padding(16, 12, 16, 12),
+            AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink,
         };
+        root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, ContentWidth));
         Controls.Add(root);
 
-        var header = new Label
+        var header = new FlowLayoutPanel { AutoSize = true, WrapContents = false, Margin = new Padding(0, 0, 0, 2) };
+        if (Icon != null)
+            header.Controls.Add(new PictureBox
+            {
+                Image = new Icon(Icon, 48, 48).ToBitmap(), SizeMode = PictureBoxSizeMode.Zoom,
+                Size = new Size(48, 48), Margin = new Padding(0, 0, 10, 0),
+            });
+        header.Controls.Add(new Label
         {
             Text = "ICO — PC Port", Font = new Font("Segoe UI Semibold", 16f), AutoSize = true,
-            Margin = new Padding(0, 0, 0, 2),
-        };
+            Anchor = AnchorStyles.Left, Margin = new Padding(0, 10, 0, 0),
+        });
         root.Controls.Add(header);
         root.Controls.Add(new Label { Text = S.Intro, AutoSize = true, MaximumSize = new Size(680, 0), Margin = new Padding(0, 0, 0, 8) });
 
@@ -146,6 +158,7 @@ sealed class MainForm : Form
     static Label Hint(string text) => new()
     {
         Text = text, AutoSize = true, ForeColor = SystemColors.GrayText, MaximumSize = new Size(640, 0),
+        UseMnemonic = false,   // "ICO & Shadow..." must keep its ampersand
         Margin = new Padding(3, 0, 3, 4),
     };
 
@@ -386,7 +399,7 @@ sealed class MainForm : Form
         if (_shortcut.Checked)
         {
             Status(S.Shortcuts);
-            var exe = Path.Combine(_installDir, "ICO.exe");
+            var exe = Path.Combine(_installDir, "ico.exe");
             Shortcuts.Create(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory), "ICO.lnk"), exe);
             var menu = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs), "ICO PC Port");
             Directory.CreateDirectory(menu);
@@ -501,7 +514,7 @@ sealed class MainForm : Form
 
     void Launch()
     {
-        var exe = Path.Combine(_installDir, "ICO.exe");
+        var exe = Path.Combine(_installDir, "ico.exe");
         Process.Start(new ProcessStartInfo(exe) { UseShellExecute = true, WorkingDirectory = _installDir });
         Close();
     }
