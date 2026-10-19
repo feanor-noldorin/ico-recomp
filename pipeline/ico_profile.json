@@ -1,0 +1,64 @@
+{
+  "_comment": "Everything the pipeline needs to know about the supported release. Hashes identify the user's own files; nothing here is game data.",
+  "title": "ICO",
+  "title_id": "BCUS98259",
+  "release": "Ico & Shadow of the Colossus Collection (USA) - ICO",
+  "game_files": {
+    "self": "USRDIR/ICO.self",
+    "self_sha256": "bef83af9cea5c98ab09f272f47c5af7da9784e771866559f53a7f83ab9971334",
+    "elf_sha256": "ac96e07650b3e3b631c1df2995c904af8a15e6cac09f428c851c99873d9709c8",
+    "copy": [
+      "PARAM.SFO",
+      "ICON0.PNG",
+      "PIC0.PNG",
+      "SND0.AT3",
+      "USRDIR/EBOOT.BIN",
+      "USRDIR/ICO"
+    ],
+    "required": [
+      "PARAM.SFO",
+      "USRDIR/ICO/ico.psarc"
+    ]
+  },
+  "ppu": {
+    "code_end": "0x3BC7B4"
+  },
+  "spu_images": [
+    {"name": "spu_0000_at_00464380", "sha256": "b75ddb2c345196afea95524caa3408ae74d03eb282e3e0dc22733229bfdd6aa7", "code_end": null},
+    {"name": "spu_0001_at_00465C80", "sha256": "c45c773e46a9f5e8e15f03310b457dcaed940d0b46fba414b7c39f3ec8050742", "code_end": "0xAD68"},
+    {"name": "spu_0002_at_0046E480", "sha256": "2bf63b96000318de2d8dcf238521bd1bbc4d0ec1788c0e3859120674ecc99c97", "code_end": "0x7E48"},
+    {"name": "spu_0003_at_00473600", "sha256": "a7d44b015c5c9dca4f8523931ed6d0786bb5058b0757fc8484e39a0cbea5ed82", "code_end": "0x10568"},
+    {"name": "spu_0004_at_00483D00", "sha256": "1cf29ea3617e57144c0cf561017dc36debc7b91672ce1f16d46596ef3c7e8b12", "code_end": "0xAD30"},
+    {"name": "spu_0005_at_0048CC80", "sha256": "5b6a086a6c226c1c3eb49197bb494ccf9b1c66cf0ae78da007d7f8a33279c5a7", "code_end": null}
+  ],
+  "spu_overlays": [
+    {
+      "_comment": "MultiStream DSP page: the title's own spu_0005 running at LS 0x30000.",
+      "dir": "msdsp_30000",
+      "source": "spu_image:spu_0005_at_0048CC80",
+      "rebase": "0x30000",
+      "prefix": "msdsp30000_",
+      "code_end": null,
+      "extra_funcs": "0x30080,0x30090,0x30F28"
+    },
+    {
+      "_comment": "ATRAC codec from the user's own PS3 firmware (RPCS3 dev_flash). Lifted on the user's machine only; never redistributed.",
+      "dir": "flashatrac",
+      "source": "dev_flash:sys/external/flashATRAC.pic",
+      "sha256": "1edf54e1323dd736b71958ca56307d536dedc7c05ccb0dd3b2a3be1af5b50e30",
+      "firmware": "4.91",
+      "rebase": "0x33100",
+      "prefix": "flashatrac_",
+      "code_end": "0x385D0",
+      "extra_funcs": null
+    }
+  ],
+  "runtime_env": {
+    "PS3_TITLE": "ICO",
+    "GCM_FLIPCB_ONTICK": "1",
+    "GCM_NV3089_GPU_COPY": "1",
+    "PS3RECOMP_RSX_ENGINE": "dispatch",
+    "ICO_SKIP_MLAA": "1",
+    "ICO_QUIET": "1"
+  }
+}

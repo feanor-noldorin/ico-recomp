@@ -1,0 +1,68 @@
+# ---------------------------------------------------------------------------
+# Nothing from the game, the firmware or the recompiler's output is ever
+# committed. The installer produces all of it on the user's PC.
+# ---------------------------------------------------------------------------
+
+# Game files (dumps, executables, archives, saves)
+PS3_GAME/
+PS3_DISC.SFB
+PS3_UPDATE/
+PS3_EXTRA/
+dump/
+vfs/
+*.self
+*.sprx
+*.elf
+*.prx
+*.psarc
+*.pkg
+*.iso
+*.rap
+*.edat
+*.sdat
+EBOOT.BIN
+PARAM.SFO
+*.AT3
+
+# Firmware (dev_flash) and anything lifted from it
+dev_flash*/
+*.pic
+*.PUP
+
+# Lifter output (derived from the game / firmware)
+recompiled/
+port/recompiled/
+port/spu/
+spu_images/
+spu_rebased/
+out/
+*.functions.json
+*.imports.json
+*.image.json
+*.loader.json
+
+# Build output
+build/
+installer/**/bin/
+installer/**/obj/
+*.exe
+*.pdb
+*.ilk
+*.obj
+*.lib
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Logs, captures, local tooling
+*.log
+logs/
+captures/
+*.bmp
+*.dds
+.vs/
+.vscode/
+*.user
