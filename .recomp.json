@@ -1,0 +1,31 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "ICO",
+  "wikidata": "Q1324448",
+  "system": "PS3",
+  "type": "recomp",
+  "original": {
+    "region": "USA",
+    "serial": "BCUS98259",
+    "revision": "ICO & SotC Collection",
+    "sha1": "8b0404f496f8cc105cdd1bbd390fa0e781a535f0"
+  },
+  "project": "ICO PC Port",
+  "status": "in-progress",
+  "targets": ["Windows"],
+  "toolchain": "Ps3recomp",
+  "approach": "Static recompilation of PPU and SPU code with ps3recomp, Direct3D 12 RSX draw engine; installer recompiles on the user's PC",
+  "maintainers": [{ "name": "feanor-noldorin", "link": "https://github.com/feanor-noldorin" }],
+  "links": [
+    { "label": "Releases", "url": "https://github.com/feanor-noldorin/ico-recomp/releases" },
+    { "label": "ps3recomp branch", "url": "https://github.com/feanor-noldorin/ps3recomp/tree/ico-port" }
+  ],
+  "help": [
+    "Gameplay testing (controls, saves, long sessions)",
+    "Keyboard and mouse input",
+    "Graphics settings menu and upscaling (FSR/DLSS)",
+    "Audio glitches when a music track starts"
+  ],
+  "tags": ["alpha", "direct3d12", "installer"],
+  "notes": "v0.1.0 alpha: boots to the title menu, plays the opening cinematic and reaches gameplay at ~48-60 fps in 3D. No game files included: the installer checks the user's own copy, decrypts the executable with the user's RPCS3 and recompiles it locally. Known issues: no anti-aliasing (MLAA skipped), fixed 1280x720, short audio glitches."
+}
