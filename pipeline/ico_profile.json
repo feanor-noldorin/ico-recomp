@@ -82,12 +82,23 @@
       "extra_funcs": null
     }
   ],
+  "sdl2": {
+    "_comment": "Official SDL2 development package (zlib license) for the DualSense / DualShock 4 controller backend; downloaded at install and checked by SHA-256.",
+    "url": "https://github.com/libsdl-org/SDL/releases/download/release-2.32.10/SDL2-devel-2.32.10-VC.zip",
+    "file": "SDL2-devel-2.32.10-VC.zip",
+    "sha256": "af347939395a58b365846aaea27391e69f9ec9d4dd650d6ac40802159b418a6e",
+    "size_mb": 7.2,
+    "dir": "SDL2-2.32.10"
+  },
   "runtime_env": {
     "PS3_TITLE": "ICO",
     "GCM_FLIPCB_ONTICK": "1",
+    "GCM_PREPAREFLIP_QUEUE": "1",
     "GCM_NV3089_GPU_COPY": "1",
     "PS3RECOMP_RSX_ENGINE": "dispatch",
     "ICO_SKIP_MLAA": "1",
-    "ICO_QUIET": "1"
+    "ICO_QUIET": "1",
+    "ICO_60FPS": "1",
+    "ICO_CAPTURE": "0"
   }
 }

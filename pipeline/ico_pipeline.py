@@ -37,6 +37,8 @@ import stat
 import subprocess
 import sys
 import time
+import urllib.request
+import zipfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -342,7 +344,41 @@ def make_icon(a, prof, port) -> None:
                               if " ICON " not in l), encoding="utf-8")
 
 
-def build(a, port, env) -> Path:
+def fetch_sdl2(a, prof) -> Path | None:
+    """The official SDL2 development package (controller backend: DualSense,
+    DualShock 4). Downloaded once into the build folder and checked by SHA-256;
+    --sdl2-zip uses a copy you already have. Returns SDL2's cmake/ folder, or
+    None to build with XInput controllers only when it cannot be had."""
+    s = prof.get("sdl2")
+    if not s:
+        return None
+    deps = a.work / "deps"
+    deps.mkdir(parents=True, exist_ok=True)
+    zp = a.sdl2_zip or deps / s["file"]
+    try:
+        if not zp.exists() or sha256(zp) != s["sha256"]:
+            if a.sdl2_zip:
+                raise PipelineError(f"{zp} is not {s['file']} (SHA-256 differs).")
+            log(f"Downloading {s['file']} ({s['size_mb']} MB) from {s['url']}")
+            tmp = zp.with_suffix(".part")
+            with urllib.request.urlopen(s["url"], timeout=120) as r, open(tmp, "wb") as f:
+                shutil.copyfileobj(r, f)
+            if sha256(tmp) != s["sha256"]:
+                tmp.unlink()
+                raise PipelineError(f"{s['file']}: SHA-256 does not match the expected value.")
+            tmp.replace(zp)
+        out = deps / s["dir"]
+        if not (out / "cmake").exists():
+            with zipfile.ZipFile(zp) as z:
+                z.extractall(deps)
+        return out / "cmake"
+    except Exception as e:                  # noqa: BLE001 -- controllers still work through XInput
+        warn(f"SDL2 is not available ({e}); building with XInput controllers only "
+             "(no DualSense / DualShock 4).")
+        return None
+
+
+def build(a, port, env, sdl2_cmake: Path | None) -> Path:
     bld = a.work / "build"
     flags = "/O2 /Ob2 /DNDEBUG /clang:-msse4.1"
     if a.simd == "avx2":                    # AVX2 + FMA fast paths (runtime/spu/spu_helpers.h)
@@ -354,7 +390,9 @@ def build(a, port, env) -> Path:
          f"-DPython3_EXECUTABLE={a.python}",
          "-DPORT_SPU_INPUTS=",
          f"-DCMAKE_C_FLAGS_RELEASE={flags}",
-         f"-DCMAKE_CXX_FLAGS_RELEASE={flags}"], env=env)
+         f"-DCMAKE_CXX_FLAGS_RELEASE={flags}",
+         *([f"-DPS3RECOMP_PAD_SDL2=ON", f"-DSDL2_DIR={sdl2_cmake}"] if sdl2_cmake
+           else ["-DPS3RECOMP_PAD_SDL2=OFF"])], env=env)
 
     step(10)
     pat = re.compile(r"^\[(\d+)/(\d+)\]")
@@ -376,6 +414,9 @@ def install(a, prof, exe, elf) -> None:
         if f.name.lower() == "ico.exe" and f.name != "ico.exe":
             f.unlink()
     shutil.copyfile(exe, a.install / "ico.exe")
+    dll = exe.parent / "SDL2.dll"           # the controller backend, when built with it
+    if dll.exists():
+        shutil.copyfile(dll, a.install / "SDL2.dll")
     data = a.install / "data"
     data.mkdir(exist_ok=True)
     shutil.copyfile(elf, data / "ICO.elf")
@@ -416,6 +457,7 @@ def main() -> int:
     ap.add_argument("--python", type=Path, default=Path(sys.executable),
                     help="interpreter with ps3recomp's requirements installed")
     ap.add_argument("--vs", help="Visual Studio installation path (default: vswhere)")
+    ap.add_argument("--sdl2-zip", type=Path, help="SDL2-devel-*-VC.zip you already have (else it is downloaded)")
     ap.add_argument("--link-mode", choices=["copy", "junction"], default="copy")
     ap.add_argument("--simd", choices=["avx2", "sse41"], default="avx2",
                     help="avx2 needs an AVX2+FMA CPU (Haswell / Zen or newer)")
@@ -448,7 +490,7 @@ def main() -> int:
         lift_spu(a, prof, py, tools, elf, port)
         step(9)
         make_icon(a, prof, port)
-        exe = build(a, port, env)
+        exe = build(a, port, env, fetch_sdl2(a, prof))
         step(11)
         install(a, prof, exe, elf)
     except PipelineError as e:

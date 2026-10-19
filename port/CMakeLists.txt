@@ -221,6 +221,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ps3recomp_runtime
 )
 
+# -DPS3RECOMP_PAD_SDL2=ON (DualSense / DualShock 4 through SDL2): the runtime
+# links SDL2.dll, which has to sit next to the executable.
+if(PS3RECOMP_SDL2_DLL)
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${PS3RECOMP_SDL2_DLL}" "$<TARGET_FILE_DIR:${PROJECT_NAME}>")
+endif()
+
 # The runtime is C++, and on Apple also Objective-C. Letting CMake infer the
 # link language from the generated C would leave the C++ standard library out.
 set_target_properties(${PROJECT_NAME} PROPERTIES LINKER_LANGUAGE CXX)

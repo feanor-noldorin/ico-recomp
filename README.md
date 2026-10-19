@@ -2,9 +2,11 @@
 
 **English** · [Português (Brasil)](README.pt-BR.md)
 
-> **Status — v0.1.0 (alpha):** boots to the title menu, plays the opening
-> cinematic and reaches gameplay on Windows at ~48–60 fps in the 3D scenes
-> (development PC). Expect bugs. See [Current status](#-current-status) and
+> **Status — v0.2.0 (alpha):** boots to the title menu, plays the opening
+> cinematic and is playable: Ico walks, climbs and leads Yorda at **60 fps
+> with the game's original speed** on the development PC (cinematics stay at
+> their original 30). DualSense / DualShock 4 and XInput controllers work.
+> Expect bugs. See [Current status](#-current-status) and
 > [Known issues](#-known-issues).
 
 A native Windows build of **ICO** (PS3, *ICO & Shadow of the Colossus
@@ -33,14 +35,14 @@ installer recompiles it into a PC game **on your machine**.
 
 | Area | State | Notes |
 |---|---|---|
-| Boot → title menu | ✅ Works | Fibers, SPURS v2 tasksets, LFQueue, SPU overlays all stable. |
-| Opening cinematic | ✅ Works | Full post chain: depth fog, sepia, bloom, letterbox. |
-| Gameplay | 🟡 Reached | Long sessions are not tested yet. |
-| Graphics (D3D12) | 🟡 Good | No known geometry bugs; no anti-aliasing (MLAA is skipped). |
-| Audio | 🟡 Mostly | Music and effects play; short glitches can happen when a track starts. |
-| Controller | 🟡 Works in menus | XInput (Xbox-compatible) pads. Character control in gameplay still needs confirming. |
-| Keyboard | 🟡 Basic | A fixed fallback map when no controller is connected (see [Controls](#-controls)). Full keyboard + mouse is planned. |
-| Performance | 🟢 ~48–60 fps | 3D scenes on the development PC with the AVX2 build. |
+| Boot → title menu | ✅ Works | Fibers, SPURS v2 tasksets, LFQueue, SPU overlays all stable. The title menu has **Exit Game**. |
+| Opening cinematic | ✅ Works | Full post chain: depth fog, sepia, bloom, letterbox. Cinematics run at their original 30 fps. |
+| Gameplay | 🟢 Playable | Character control, pause menu, Options, Return to title, Exit Game. Long sessions are not tested yet. |
+| Frame rate | 🟢 60 fps | Gameplay at 60 fps with the original game speed (`ICO_60FPS=1`, default); 30 fps in cinematics and scripted events. |
+| Graphics (D3D12) | 🟢 Good | Character shadows render. No anti-aliasing (MLAA is skipped). |
+| Audio | 🟡 Partial | Music plays; some sound effects are missing. |
+| Controller | ✅ Works | DualSense and DualShock 4 (USB or Bluetooth, through SDL2) and XInput (Xbox-compatible) pads. |
+| Keyboard | 🟡 Basic | A fixed map that works together with a controller (see [Controls](#-controls)). Full keyboard + mouse is planned. |
 | Saves | ⚪ Untested | Stored under `<install>\vfs`. |
 | Graphics settings menu | ❌ Not yet | Fixed 1280×720 window. Planned: resolution, vsync, AF, FPS limit, upscaling. |
 
@@ -62,6 +64,7 @@ Legend: ✅ working · 🟢 good · 🟡 partial · ⚪ untested · ❌ missing
 | Visual Studio Build Tools (C++, Clang, CMake) | Compiles the game | The installer offers to install it (≈6 GB, through winget). |
 | Python 3.10+ | Runs the recompiler | The installer offers to install it. |
 | ~5 GB free disk | Build + copied data | ~3 GB if you link to the dump instead of copying. |
+| Internet during install | Downloads [SDL2](https://www.libsdl.org) 2.32.10 (7 MB, SHA-256 checked) | The controller backend for DualSense / DualShock 4. Without it the game builds with XInput controllers only. |
 
 ### Steps
 
@@ -91,8 +94,13 @@ To **uninstall**, delete the installation folder and the shortcuts.
 
 ## 🎮 Controls
 
-An XInput (Xbox-compatible) controller works out of the box. Without one,
-the keyboard fallback is:
+**Controllers:** DualSense (PS5) and DualShock 4 (PS4) work natively, over
+USB or Bluetooth, through SDL2 — with the PlayStation button layout the game
+was made for. XInput (Xbox-compatible) controllers work too. A DualShock 3
+needs a Windows driver that exposes it as a standard controller. Stick
+diagonals keep their full speed (`PAD_SQUIRCLE=1`, default).
+
+**Keyboard:** always active, alongside any controller:
 
 | PS3 | Keyboard | | PS3 | Keyboard |
 |---|---|---|---|---|
@@ -102,6 +110,8 @@ the keyboard fallback is:
 | ▢ Square | A | | Select | Tab |
 | △ Triangle | S | | | |
 
+**Exit Game** is at the bottom of the title menu and of the pause menu.
+
 Run settings live in `ico.ini` next to `ico.exe`; see
 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md). The game's log is
 `<install>\logs\ico.log` — attach it to bug reports.
@@ -110,14 +120,16 @@ Run settings live in `ico.ini` next to `ico.exe`; see
 
 ## 🐞 Known issues
 
-- **Closing the window may not end the process.** If `ico.exe` stays in Task
-  Manager after you close it, end it there before starting again.
-- **Rare crash at start-up**: in about 1 of 3 test launches the game closed
-  within its first seconds (Windows reports `CoreMessaging.dll`, exception
-  `0xe0464645`). Start it again; it is being investigated.
+- **Long black screen before the first cinematic** (~25 s after the logos):
+  the game is loading on the SPU; it is not frozen.
+- **Some sound effects are missing**; the music plays.
+- **A black screen after skipping a cinematic** can last a few seconds.
+- **Moving or resizing the window can break the picture.** Keep the window
+  in place for now.
+- **Rare crash at start-up** (Windows reports `CoreMessaging.dll`, exception
+  `0xe0464645`) was seen in early tests. Start the game again.
 - **Only the US release** (BCUS98259) is supported. Other regions fail the
   hash check: the code cut points are specific to this executable.
-- **Short audio glitches** can happen when a music track starts.
 - **No anti-aliasing**: the game's SPU Edge MLAA is skipped for speed
   (`ICO_SKIP_MLAA=1`); a PC AA/upscaler is planned.
 - **Fixed 1280×720** window, no graphics menu yet.
@@ -131,17 +143,21 @@ Found something else? [Open an issue](../../issues) with your
 
 ---
 
-## 🆕 What's new in 0.1.0
+## 🆕 What's new in 0.2.0
 
-First public build. Highlights (full list in [CHANGELOG.md](CHANGELOG.md)):
+Highlights (full list in [CHANGELOG.md](CHANGELOG.md)):
 
-- **Installer** in the style of other recomp ports: pick your dump, automatic
-  RPCS3 decryption or your own `ICO.elf`, build-tools check, progress bar, shortcuts.
-- **Graphics**: the Direct3D 12 backend of the shared RSX draw engine — no
-  more black screen, white flashes, missing geometry or washed-out colours.
-- **Performance**: < 1 fps → ~48–60 fps in 3D (shader caches, PPU
-  re-lift with `--code-end`, AVX2 SPU math, MLAA skipped).
-- **Audio**: firmware ATRAC codec and the MultiStream DSP overlay recompiled.
+- **60 fps gameplay at the original game speed**; cinematics keep their 30 fps.
+- **DualSense / DualShock 4** support (SDL2); the keyboard works together with
+  a controller; stick diagonals at full speed.
+- **Ico walks**: a recompiler fix for jump tables restored character control.
+- **Exit Game** in the title and pause menus, drawn with the game's own font
+  and selection effect.
+- **Shadows** under the characters; fixes the light band in the middle of the
+  screen and the overall dim image.
+- **No more freezes** in the frame pacing; closing the window ends the game.
+- The installer builds with the correct frame pacing (0.1.0 builds could run
+  unlocked and too fast).
 
 ---
 
@@ -196,10 +212,10 @@ Building the installer exe: `powershell -File tools\make_release.ps1`.
 
 ## 🗺️ Roadmap
 
-1. Confirm gameplay end to end (controls, saves, long sessions).
-2. Keyboard + mouse, alongside the controller.
-3. Graphics settings menu: resolution, vsync, anisotropic filtering, FPS limiter.
-4. Modern AA / upscaling (FSR, DLSS).
+1. Long play sessions, saves, the missing sound effects.
+2. Display scaling to the monitor's resolution, then modern AA / upscaling (FSR, DLSS).
+3. Keyboard + mouse, alongside the controller.
+4. Graphics settings menu: resolution, vsync, anisotropic filtering, FPS limiter.
 5. Upstream the runtime fixes to ps3recomp.
 
 ---
@@ -215,7 +231,9 @@ ICO is © Sony Interactive Entertainment. This project is not affiliated with
 or endorsed by Sony or Team ICO / genDESIGN. The code in this repository is
 under the [MIT License](LICENSE). The icon of the installed `ico.exe` is not
 part of this repository either: the installer cuts it from the `ICON0.PNG` of
-your own copy.
+your own copy, and the "Exit Game" label is assembled at run time from the
+letters of your copy's own menu texture. [SDL2](https://www.libsdl.org) (zlib
+license) is downloaded from its official release during install.
 
 ---
 

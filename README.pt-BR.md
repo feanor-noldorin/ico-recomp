@@ -2,9 +2,11 @@
 
 [English](README.md) · **Português (Brasil)**
 
-> **Status — v0.1.0 (alfa):** inicia até o menu principal, roda a cinemática
-> de abertura e chega ao gameplay no Windows a ~48–60 fps nas cenas 3D (PC de
-> desenvolvimento). Espere bugs. Veja [Estado atual](#-estado-atual) e
+> **Status — v0.2.0 (alfa):** inicia até o menu principal, roda a cinemática
+> de abertura e já é jogável: o Ico anda, escala e conduz a Yorda a **60 fps
+> com a velocidade original do jogo** no PC de desenvolvimento (as
+> cinemáticas mantêm os 30 originais). Controles DualSense / DualShock 4 e
+> XInput funcionam. Espere bugs. Veja [Estado atual](#-estado-atual) e
 > [Problemas conhecidos](#-problemas-conhecidos).
 
 Um build nativo de Windows do **ICO** (PS3, *ICO & Shadow of the Colossus
@@ -33,14 +35,14 @@ disco e o instalador o recompila como jogo de PC **na sua máquina**.
 
 | Área | Estado | Observações |
 |---|---|---|
-| Boot → menu principal | ✅ Funciona | Fibers, tasksets SPURS v2, LFQueue e overlays SPU estáveis. |
-| Cinemática de abertura | ✅ Funciona | Pós-processamento completo: névoa por profundidade, sépia, bloom, letterbox. |
-| Gameplay | 🟡 Alcançado | Sessões longas ainda não foram testadas. |
-| Gráficos (D3D12) | 🟡 Bom | Sem bugs de geometria conhecidos; sem anti-aliasing (o MLAA é pulado). |
-| Áudio | 🟡 Quase todo | Música e efeitos tocam; pode haver falhas curtas no início de uma faixa. |
-| Controle | 🟡 Funciona nos menus | Controles XInput (compatíveis com Xbox). O controle do personagem no gameplay ainda precisa ser confirmado. |
-| Teclado | 🟡 Básico | Mapa fixo quando não há controle conectado (veja [Controles](#-controles)). Teclado + mouse completos estão planejados. |
-| Desempenho | 🟢 ~48–60 fps | Cenas 3D no PC de desenvolvimento, com o build AVX2. |
+| Boot → menu principal | ✅ Funciona | Fibers, tasksets SPURS v2, LFQueue e overlays SPU estáveis. O menu principal tem **Exit Game**. |
+| Cinemática de abertura | ✅ Funciona | Pós-processamento completo: névoa por profundidade, sépia, bloom, letterbox. As cinemáticas rodam nos 30 fps originais. |
+| Gameplay | 🟢 Jogável | Controle do personagem, menu de pausa, Options, Return to title, Exit Game. Sessões longas ainda não foram testadas. |
+| Taxa de quadros | 🟢 60 fps | Gameplay a 60 fps com a velocidade original do jogo (`ICO_60FPS=1`, padrão); 30 fps nas cinemáticas e eventos roteirizados. |
+| Gráficos (D3D12) | 🟢 Bom | As sombras dos personagens aparecem. Sem anti-aliasing (o MLAA é pulado). |
+| Áudio | 🟡 Parcial | A música toca; alguns efeitos sonoros faltam. |
+| Controle | ✅ Funciona | DualSense e DualShock 4 (USB ou Bluetooth, via SDL2) e controles XInput (compatíveis com Xbox). |
+| Teclado | 🟡 Básico | Mapa fixo que funciona junto com um controle (veja [Controles](#-controles)). Teclado + mouse completos estão planejados. |
 | Saves | ⚪ Não testado | Ficam em `<instalação>\vfs`. |
 | Menu de gráficos | ❌ Ainda não | Janela fixa em 1280×720. Planejado: resolução, vsync, filtro anisotrópico, limite de FPS, upscaling. |
 
@@ -62,6 +64,7 @@ Legenda: ✅ funciona · 🟢 bom · 🟡 parcial · ⚪ não testado · ❌ fal
 | Visual Studio Build Tools (C++, Clang, CMake) | Compila o jogo | O instalador oferece a instalação (≈6 GB, pelo winget). |
 | Python 3.10+ | Roda o recompilador | O instalador oferece a instalação. |
 | ~5 GB livres | Build + dados copiados | ~3 GB se você usar um link para o dump em vez de copiar. |
+| Internet durante a instalação | Baixa o [SDL2](https://www.libsdl.org) 2.32.10 (7 MB, com SHA-256 conferido) | O backend de controle para DualSense / DualShock 4. Sem ele, o jogo é compilado só com controles XInput. |
 
 ### Passo a passo
 
@@ -103,8 +106,14 @@ Para **desinstalar**, apague a pasta de instalação e os atalhos.
 
 ## 🎮 Controles
 
-Um controle XInput (compatível com Xbox) funciona direto. Sem controle, o
-teclado funciona assim:
+**Controles:** DualSense (PS5) e DualShock 4 (PS4) funcionam nativamente,
+por USB ou Bluetooth, via SDL2, com o layout de botões PlayStation para o qual
+o jogo foi feito. Controles XInput (compatíveis com Xbox) também funcionam. O
+DualShock 3 precisa de um driver de Windows que o apresente como controle
+padrão. As diagonais do analógico mantêm a velocidade total
+(`PAD_SQUIRCLE=1`, padrão).
+
+**Teclado:** sempre ativo, junto com qualquer controle:
 
 | PS3 | Teclado | | PS3 | Teclado |
 |---|---|---|---|---|
@@ -114,6 +123,8 @@ teclado funciona assim:
 | ▢ Quadrado | A | | Select | Tab |
 | △ Triângulo | S | | | |
 
+O **Exit Game** fica no fim do menu principal e do menu de pausa.
+
 As configurações ficam no `ico.ini`, ao lado do `ico.exe` (veja
 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)). O log do jogo é
 `<instalação>\logs\ico.log`: anexe-o aos relatos de bug.
@@ -122,19 +133,21 @@ As configurações ficam no `ico.ini`, ao lado do `ico.exe` (veja
 
 ## 🐞 Problemas conhecidos
 
-- **Fechar a janela pode não encerrar o processo.** Se o `ico.exe` continuar
-  no Gerenciador de Tarefas depois de fechado, finalize-o lá antes de abrir de novo.
-- **Crash raro na inicialização**: em cerca de 1 a cada 3 aberturas de teste
-  o jogo fechou nos primeiros segundos (o Windows aponta o `CoreMessaging.dll`,
-  exceção `0xe0464645`). Abra de novo; está sendo investigado.
+- **Tela preta longa antes da primeira cinemática** (~25 s depois dos logos):
+  o jogo está carregando nas SPUs; não travou.
+- **Alguns efeitos sonoros faltam**; a música toca.
+- **Uma tela preta depois de pular uma cinemática** pode durar alguns segundos.
+- **Mover ou redimensionar a janela pode quebrar a imagem.** Por enquanto,
+  mantenha a janela no lugar.
+- **Crash raro na inicialização** (o Windows aponta o `CoreMessaging.dll`,
+  exceção `0xe0464645`) foi visto nos primeiros testes. Abra o jogo de novo.
 - **Só a versão dos EUA** (BCUS98259) é suportada. Outras regiões falham na
   verificação de hash, porque os pontos de corte do código são específicos desse executável.
-- **Falhas curtas de áudio** podem ocorrer quando uma faixa começa.
 - **Sem anti-aliasing**: o Edge MLAA do jogo (SPU) é pulado para ganhar
   desempenho (`ICO_SKIP_MLAA=1`). Um AA/upscaler de PC está planejado.
 - **Janela fixa em 1280×720**, ainda sem menu de gráficos.
 - **Um núcleo da CPU fica ocupado** enquanto o jogo roda, porque o renderizador SPU fica consultando se há trabalho.
-- **A primeira instalação é longa** e exige o Visual Studio Build Tools (~6 GB).
+- **A primeira instalação é longa** (6–30 min) e exige o Visual Studio Build Tools (~6 GB).
 - **Só Windows** (Direct3D 12).
 
 Achou outro problema? [Abra uma issue](../../issues) com o seu
@@ -142,18 +155,23 @@ Achou outro problema? [Abra uma issue](../../issues) com o seu
 
 ---
 
-## 🆕 Novidades da 0.1.0
+## 🆕 Novidades da 0.2.0
 
-Primeiro build público. Destaques (lista completa em [CHANGELOG.md](CHANGELOG.md)):
+Destaques (lista completa em [CHANGELOG.md](CHANGELOG.md), em inglês):
 
-- **Instalador** no estilo de outros ports de recomp: escolha do dump,
-  decriptação automática pelo RPCS3 ou seu próprio `ICO.elf`, verificação
-  das ferramentas, barra de progresso e atalhos.
-- **Gráficos**: backend Direct3D 12 do motor de desenho RSX compartilhado. Acabaram a tela
-  preta, os flashes brancos, a geometria faltando e as cores lavadas.
-- **Desempenho**: de < 1 fps para ~48–60 fps no 3D (caches de shader, re-lift
-  da PPU com `--code-end`, matemática SPU em AVX2 e MLAA pulado).
-- **Áudio**: codec ATRAC do firmware e o overlay DSP da MultiStream recompilados.
+- **Gameplay a 60 fps com a velocidade original do jogo**; as cinemáticas
+  mantêm os 30 fps.
+- **Suporte a DualSense / DualShock 4** (SDL2); o teclado funciona junto com
+  um controle; diagonais do analógico em velocidade total.
+- **O Ico anda**: uma correção do recompilador nas tabelas de salto devolveu o
+  controle do personagem.
+- **Exit Game** nos menus principal e de pausa, desenhado com a fonte e o
+  efeito de seleção do próprio jogo.
+- **Sombras** sob os personagens; corrige a faixa clara no meio da tela e a
+  imagem escurecida.
+- **Fim dos travamentos** no ritmo dos quadros; fechar a janela encerra o jogo.
+- O instalador compila com o ritmo de quadros correto (builds da 0.1.0 podiam
+  rodar sem trava e rápidos demais).
 
 ---
 
@@ -191,10 +209,10 @@ Para desenvolvedores: veja [docs/BUILDING.md](docs/BUILDING.md).
 
 ## 🗺️ Próximos passos
 
-1. Confirmar o gameplay de ponta a ponta (controles, saves, sessões longas).
-2. Teclado + mouse, junto com o controle.
-3. Menu de gráficos: resolução, vsync, filtro anisotrópico, limitador de FPS.
-4. AA/upscaling moderno (FSR, DLSS).
+1. Sessões longas, saves e os efeitos sonoros que faltam.
+2. Escala da imagem para a resolução do monitor, depois AA/upscaling moderno (FSR, DLSS).
+3. Teclado + mouse, junto com o controle.
+4. Menu de gráficos: resolução, vsync, filtro anisotrópico, limitador de FPS.
 5. Enviar as correções de runtime para o ps3recomp oficial.
 
 ---
@@ -210,7 +228,10 @@ cópia do RPCS3.
 ICO é © Sony Interactive Entertainment. Este projeto não tem vínculo nem aval
 da Sony nem da Team ICO / genDESIGN. O código deste repositório está sob a
 [licença MIT](LICENSE). O ícone do `ico.exe` instalado também não faz parte
-deste repositório: o instalador o recorta do `ICON0.PNG` da sua própria cópia.
+deste repositório: o instalador o recorta do `ICON0.PNG` da sua própria cópia,
+e o rótulo "Exit Game" é montado durante a execução com as letras da textura de
+menu da sua própria cópia. O [SDL2](https://www.libsdl.org) (licença zlib) é
+baixado do release oficial durante a instalação.
 
 ---
 

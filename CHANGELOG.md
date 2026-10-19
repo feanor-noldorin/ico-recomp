@@ -2,6 +2,46 @@
 
 All notable changes to the ICO PC port. Dates are YYYY-MM-DD.
 
+## [0.2.0] — 2026-10-19 — playable at 60 fps
+
+### Gameplay
+- **Character control**: a ps3recomp lifter fix for jump tables whose base
+  is spilled to the stack (a `switch` was lifted as an indirect call) — Ico
+  walks, climbs and leads Yorda.
+- **60 fps at the original game speed** (`ICO_60FPS=1`, default): one logic
+  step per drawn frame in play; cinematics and scripted events keep 30 fps.
+- **Exit Game** at the bottom of the title and pause menus, using the game's
+  own font and selection effect (built at run time from the game's texture;
+  no art ships with the project). `ICO_EXIT_ITEM=0` hides it.
+
+### Input
+- **DualSense / DualShock 4** through SDL2 (USB or Bluetooth), XInput kept as
+  fallback; the keyboard now works together with a controller.
+- **Full-speed diagonals** (`PAD_SQUIRCLE=1`, default).
+
+### Graphics
+- **Character shadows**: the half-resolution depth + stencil copy of the
+  stencil shadow pass now runs on the GPU (`RSX_ENGINE_DEPTH_BLIT=1`, default).
+  Fixes the light band in the middle of the screen and the dim image.
+
+### Stability and pacing
+- PrepareFlip/FlipImmediate queue with an exact 60 Hz clock: correct frame
+  time and audio sync (`GCM_PREPAREFLIP_QUEUE=1`, now set by the installer —
+  0.1.0 builds could run unlocked and too fast).
+- Prepare marker in the command FIFO: fixes freezes when the emulated GPU
+  ran a frame ahead; the stuck-command detector no longer fires on legitimate
+  waits.
+- Frame submit without a full GPU wait: GPU stall 9–10 ms → 0.2–1.7 ms per frame.
+- Closing the window ends the process.
+- **F9 capture** for bug reports (`ICO_CAPTURE=1`, off by default): the next
+  frame's render passes and the game's memory.
+
+### Installer
+- Downloads the official SDL2 2.32.10 development package (SHA-256 checked)
+  and builds the controller backend; without it the game builds with XInput
+  controllers only.
+- `ico.ini` gains `GCM_PREPAREFLIP_QUEUE=1`, `ICO_60FPS=1` and `ICO_CAPTURE=0`.
+
 ## [0.1.0] — 2026-10-18 — first public build
 
 The first release that boots ICO to the title menu and into the opening

@@ -12,20 +12,38 @@
   },
   "project": "ICO PC Port",
   "status": "in-progress",
-  "targets": ["Windows"],
+  "targets": [
+    "Windows"
+  ],
   "toolchain": "Ps3recomp",
   "approach": "Static recompilation of PPU and SPU code with ps3recomp, Direct3D 12 RSX draw engine; installer recompiles on the user's PC",
-  "maintainers": [{ "name": "feanor-noldorin", "link": "https://github.com/feanor-noldorin" }],
+  "maintainers": [
+    {
+      "name": "feanor-noldorin",
+      "link": "https://github.com/feanor-noldorin"
+    }
+  ],
   "links": [
-    { "label": "Releases", "url": "https://github.com/feanor-noldorin/ico-recomp/releases" },
-    { "label": "ps3recomp branch", "url": "https://github.com/feanor-noldorin/ps3recomp/tree/ico-port" }
+    {
+      "label": "Releases",
+      "url": "https://github.com/feanor-noldorin/ico-recomp/releases"
+    },
+    {
+      "label": "ps3recomp branch",
+      "url": "https://github.com/feanor-noldorin/ps3recomp/tree/ico-port"
+    }
   ],
   "help": [
-    "Gameplay testing (controls, saves, long sessions)",
+    "Long play sessions and saves",
+    "Missing sound effects",
     "Keyboard and mouse input",
-    "Graphics settings menu and upscaling (FSR/DLSS)",
-    "Audio glitches when a music track starts"
+    "Graphics settings menu and upscaling (FSR/DLSS)"
   ],
-  "tags": ["alpha", "direct3d12", "installer"],
-  "notes": "v0.1.0 alpha: boots to the title menu, plays the opening cinematic and reaches gameplay at ~48-60 fps in 3D. No game files included: the installer checks the user's own copy, decrypts the executable with the user's RPCS3 and recompiles it locally. Known issues: no anti-aliasing (MLAA skipped), fixed 1280x720, short audio glitches."
+  "tags": [
+    "alpha",
+    "direct3d12",
+    "installer",
+    "60fps"
+  ],
+  "notes": "v0.2.0 alpha: playable — Ico walks, climbs and leads Yorda at 60 fps with the original game speed (cinematics at their original 30), DualSense / DualShock 4 and XInput controllers, Exit Game in the menus. No game files included: the installer checks the user's own copy, decrypts the executable with the user's RPCS3 and recompiles it locally. Known issues: some sound effects missing, long black screen before the first cinematic, no anti-aliasing, fixed 1280x720."
 }

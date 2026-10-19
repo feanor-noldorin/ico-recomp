@@ -520,6 +520,375 @@ extern "C" void ico_frameclock_report(double secs)
             (double)InterlockedExchange64(&s_fc_bytes, 0) / 1024.0 / secs);
 }
 
+/* ---------------------------------------------------------------------------
+ * "Exit Game" in the title and pause menus (ICO_EXIT_ITEM=0 turns it off).
+ *
+ * ICO's 2D menus are data:
+ *  - layers: 0x70-byte records at [TOC-0x7990] (0x4C8520 -> 0x51E3F4), 0x1D0 of
+ *    them. +0x14/+0x18/+0x1C texture, +0x2C state entered on confirm, +0x38
+ *    down / +0x3C up neighbour, +0x4C width override, +0x50 Y, +0x5C U,
+ *    +0x60 height, +0x64 width, +0x68 V (texture half-pixels), +0x6C flags;
+ *  - screens: 56-byte records at 0x5BF75C, [first, end) layer range, +0x28
+ *    default and +0x2C selected layer; the current screen is [0x5E9B78].
+ *    Title = screen 12 (Continue 0x31, New Game 0x32), pause = screen 57
+ *    (0x124-0x128: two backdrops, Options, Back, Return to title screen).
+ * The selected item is highlighted by the game's own draw code (layer ==
+ * selected), so an item added as a real layer gets the same pulsing effect.
+ *
+ *  - on-screen rects: func_0003232C looks a drawn layer up in a table of 0x1A
+ *    entries of 0x2C bytes at [TOC-0x7498] (0x3BD8CC) -- screen, layer range
+ *    (inclusive), then slots -- and scales the rect by 0.75; layers 0x31/0x32
+ *    alone (hard-coded) also get +240 in Y. A layer outside its screen's
+ *    entry is not drawn.
+ *
+ * A screen draws a contiguous layer range and the next layer after each menu
+ * belongs to another screen, so the array is copied to free guest memory with
+ * room for 3 more layers and the TOC entry is pointed at the copy.
+ *  - Title: the confirm compares the selected layer with 0x31 and 0x32 by
+ *    number (func_0001E34C), so Continue and New Game stay; Exit takes 0x33
+ *    and screen 13's one layer (a hidden "New Game") moves to 0x1D2.
+ *  - Pause: the confirm compares with 0x127 (Back, func_0001FEA4) and the
+ *    Options screen after it is full of numbers too, so nothing moves. Exit
+ *    takes 0x129 -- Options' first layer, a dim bar identical to the pause's
+ *    own 0x124 -- while the pause is the current screen, and the bar is put
+ *    back whenever it is not. Back's rect is trimmed so it no longer reaches
+ *    the label.
+ *  - The rect table follows. Exit at 0x33 lacks the +240 of 0x31/0x32, so its
+ *    Y gets the equivalent +20.
+ *  - Flags bit 0x08000000 hides a layer. Every frame the draw loop sets it from
+ *    bit 0x04000000 on the shown screen's layers, and the title's handler then
+ *    clears it on 0x31/0x32 by number; Exit simply has no 0x04. Screen 13's
+ *    handler hides 0x33 by number (func_0001E0CC), so the moved layer copies
+ *    that bit from 0x33 instead.
+ * The game resolves textures for every layer of a screen's range itself.
+ *
+ * The label is built in the menu texture itself (menu_PAL_03, 1024x512 A8R8G8B8
+ * swizzled, 11 mips) from the game's own letters -- "E" of "Film Effect", "xi"
+ * of "Maximum", "t" of "Activate", "Game" of "New Game" -- into a free area
+ * right of "Back" (U 196, V 20), so no game image is shipped with the port.
+ * The texture is found in guest memory by two content hashes; the game's
+ * texture cache re-hashes it each frame, so the change shows up by itself.
+ * Choosing Exit enters an unused screen (0x43), which this loop turns into a
+ * process exit. Until the label is in place the Exit layers stay unlinked. */
+static const uint32_t EX_TOC_LAYERS = 0x4C8520u, EX_OLD_LAYERS = 0x51E3F4u;
+static const uint32_t EX_SCREENS = 0x5BF75Cu, EX_CUR_SCREEN = 0x5E9B78u;
+static const uint32_t EX_NEW_LAYERS = 0x0C000000u, EX_N_OLD = 0x1D0u;
+static const uint32_t EX_EXIT_SCREEN = 0x43u, EX_RECTS_TOC = 0x4C8A18u;
+/* title Exit, pause Exit; new layers: the pause Exit's record, Options' bar
+ * while the pause Exit borrows its slot, screen 13's layer */
+static const uint32_t EX_TEXIT = 0x33u, EX_PEXIT = 0x129u;
+static const uint32_t EX_PREC = 0x1D0u, EX_BAR = 0x1D1u, EX_S13 = 0x1D2u, EX_N_NEW = 0x1D3u;
+static int s_ex_p129 = 0;          /* 0x129 holds: 0 Options' bar, 1 the pause Exit */
+static int s_ex_on = 0, s_ex_linked = 0;
+static uint32_t s_ex_tex[4]; static int s_ex_ntex = 0;
+
+static inline uint32_t ex_layer(uint32_t i) { return EX_NEW_LAYERS + i * 0x70u; }
+static inline uint32_t ex_screen(uint32_t i) { return EX_SCREENS + i * 56u; }
+
+static uint32_t ex_swz(uint32_t x, uint32_t y, uint32_t lw, uint32_t lh)
+{
+    uint32_t i = 0, bit = 0;
+    while (lw || lh) {
+        if (lw) { i |= (x & 1u) << bit++; x >>= 1; lw--; }
+        if (lh) { i |= (y & 1u) << bit++; y >>= 1; lh--; }
+    }
+    return i;
+}
+static uint64_t ex_fnv(const uint8_t* p, uint32_t n)
+{
+    uint64_t h = 1469598103934665603ull;
+    for (uint32_t i = 0; i < n; i++) { h ^= p[i]; h *= 1099511628211ull; }
+    return h;
+}
+
+/* Level l of the texture at guest `base`: byte offset and log2 size. */
+static uint32_t ex_level(uint32_t l, uint32_t* lw, uint32_t* lh)
+{
+    uint32_t off = 0, w = 10, h = 9;
+    for (uint32_t k = 0; k < l; k++) {
+        off += (1u << w) * (1u << h) * 4u;
+        if (w) w--;
+        if (h) h--;
+    }
+    *lw = w; *lh = h;
+    return off;
+}
+/* A8R8G8B8 texel (bytes A,R,G,B in memory) as r,g,b,a. */
+static void ex_get(uint32_t base, uint32_t l, uint32_t x, uint32_t y, uint8_t c[4])
+{
+    uint32_t lw, lh; const uint32_t off = ex_level(l, &lw, &lh);
+    const uint8_t* p = vm_base + base + off + ex_swz(x, y, lw, lh) * 4u;
+    c[0] = p[1]; c[1] = p[2]; c[2] = p[3]; c[3] = p[0];
+}
+static void ex_put(uint32_t base, uint32_t l, uint32_t x, uint32_t y, const uint8_t c[4])
+{
+    uint32_t lw, lh; const uint32_t off = ex_level(l, &lw, &lh);
+    uint8_t* p = vm_base + base + off + ex_swz(x, y, lw, lh) * 4u;
+    p[1] = c[0]; p[2] = c[1]; p[3] = c[2]; p[0] = c[3];
+}
+
+/* Destination of the label in level 0 (texture pixels) and its UV box. */
+static const uint32_t EX_BX = 392, EX_BY = 40, EX_BW = 242, EX_BH = 40;
+
+/* Compose "Exit Game" from the texture's own glyphs into the free box, then
+ * rebuild that box in every mip. Returns 0 when the box is not empty (another
+ * language's sheet, or a layout this does not know). Alpha is PS2-range
+ * (0..128); letters are combined with "over". */
+static int ex_patch_texture(uint32_t base)
+{
+    /* already ours? (the box's top-left corner stays transparent) */
+    for (uint32_t y = EX_BY; y < EX_BY + EX_BH; y++)
+        for (uint32_t x = EX_BX; x < EX_BX + EX_BW; x++) {
+            uint8_t c[4]; ex_get(base, 0, x, y, c);
+            if (c[3]) return -1;
+        }
+    struct { int x0, x1, base, lc, rc, gap; } G[5] = {
+        { 252, 278, 228, 249, 279,  0 },   /* E  (Film Effect) */
+        { 333, 356, 108, 332, 357,  4 },   /* x  (Maximum)     */
+        { 359, 364, 108, 358, 366,  4 },   /* i  (Maximum)     */
+        { 610, 622, 349, 609, 624,  4 },   /* t  (Activate)    */
+        { 843, 969,  28, 835, 975, 16 },   /* Game (New Game)  */
+    };
+    const int PAD_T = 26, CH = 35, CW = 260;
+    static uint8_t canvas[35][260][4];
+    memset(canvas, 0, sizeof canvas);
+    int cx = 8;
+    for (int k = 0; k < 5; k++) {
+        if (G[k].gap) cx += G[k].gap - (G[k].x0 - G[k].lc);
+        for (int yy = 0; yy < CH; yy++) {
+            const int sy = G[k].base - PAD_T + yy;
+            for (int sx = G[k].lc; sx < G[k].rc; sx++) {
+                uint8_t s[4]; ex_get(base, 0, (uint32_t)sx, (uint32_t)sy, s);
+                if (!s[3]) continue;
+                const int dx = cx + (sx - G[k].lc);
+                if (dx < 0 || dx >= CW) continue;
+                uint8_t* d = canvas[yy][dx];
+                const double fa = s[3] / 128.0, ba = d[3] / 128.0, oa = fa + ba * (1 - fa);
+                if (oa > 0) {
+                    for (int i = 0; i < 3; i++)
+                        d[i] = (uint8_t)((s[i] * fa + d[i] * ba * (1 - fa)) / oa);
+                    const double a = oa * 128.0 + 0.5;
+                    d[3] = (uint8_t)(a > 128 ? 128 : a);
+                }
+            }
+        }
+        cx += (G[k].rc - G[k].lc) - (G[k].rc - G[k].x1);
+    }
+    const int w = cx + 10;
+    if (w > (int)EX_BW) return 0;
+    for (int yy = 0; yy < CH; yy++)
+        for (int xx = 0; xx < w; xx++)
+            ex_put(base, 0, EX_BX + xx, EX_BY + 2 + yy, canvas[yy][xx]);
+    for (uint32_t l = 1; l < 11; l++) {
+        uint32_t lw, lh; ex_level(l, &lw, &lh);
+        const uint32_t W = 1u << lw, H = 1u << lh;
+        const uint32_t x0 = EX_BX >> l, y0 = EX_BY >> l;
+        uint32_t x1 = (EX_BX + EX_BW + (1u << l) - 1) >> l, y1 = (EX_BY + EX_BH + (1u << l) - 1) >> l;
+        if (x1 > W) x1 = W;
+        if (y1 > H) y1 = H;
+        uint32_t pw, ph; ex_level(l - 1, &pw, &ph);
+        for (uint32_t y = y0; y < y1; y++)
+            for (uint32_t x = x0; x < x1; x++) {
+                unsigned acc[4] = { 0, 0, 0, 0 }, n = 0;
+                for (uint32_t j = 0; j < 2; j++)
+                    for (uint32_t i = 0; i < 2; i++) {
+                        const uint32_t sx = 2 * x + i, sy = 2 * y + j;
+                        if (sx >= (1u << pw) || sy >= (1u << ph)) continue;
+                        uint8_t c[4]; ex_get(base, l - 1, sx, sy, c);
+                        for (int q = 0; q < 4; q++) acc[q] += c[q];
+                        n++;
+                    }
+                if (!n) continue;
+                uint8_t c[4];
+                for (int q = 0; q < 4; q++) c[q] = (uint8_t)((acc[q] + n / 2) / n);
+                ex_put(base, l, x, y, c);
+            }
+    }
+    return 1;
+}
+
+/* Find every copy of menu_PAL_03 in guest memory (main heap and RSX local),
+ * by two 256-byte content hashes at known level-0 offsets, 128-byte aligned. */
+static void ex_find_textures(void)
+{
+    static const struct { uint32_t off; uint64_t hash; } SIG[2] = {
+        { 0x144C00u, 0xCF4B6C0B6CFDE50Cull },   /* "New Game" */
+        { 0x06B100u, 0x22B9A787DEC12825ull },   /* "Film Effect" */
+    };
+    const uint32_t SPAN = 0x2AAAACu;
+    s_ex_ntex = 0;
+    const uint32_t ranges[2][2] = { { 0x30000000u, 0x50000000u }, { 0xC0000000u, 0xD0000000u } };
+    for (int r = 0; r < 2; r++) {
+        for (uint64_t a = ranges[r][0]; a < ranges[r][1]; ) {
+            MEMORY_BASIC_INFORMATION mb;
+            if (!VirtualQuery(vm_base + a, &mb, sizeof mb)) break;
+            uint64_t end = (uint64_t)((uint8_t*)mb.BaseAddress + mb.RegionSize - vm_base);
+            if (end <= a) break;
+            if (end > ranges[r][1]) end = ranges[r][1];
+            if (mb.State == MEM_COMMIT && !(mb.Protect & (PAGE_NOACCESS | PAGE_GUARD))) {
+                for (uint64_t p = (a + 127) & ~127ull; p + 256 <= end; p += 128) {
+                    if (ex_fnv(vm_base + p, 256) != SIG[0].hash) continue;
+                    if (p < SIG[0].off) continue;
+                    const uint64_t base = p - SIG[0].off;
+                    if (base + SPAN > ranges[r][1]) continue;
+                    if (ex_fnv(vm_base + base + SIG[1].off, 256) != SIG[1].hash) continue;
+                    if (s_ex_ntex < 4) s_ex_tex[s_ex_ntex++] = (uint32_t)base;
+                }
+            }
+            a = end;
+        }
+    }
+}
+
+static void ex_copy_layer(uint32_t dst, uint32_t src)
+{
+    for (uint32_t o = 0; o < 0x70u; o += 4) vm_write32(ex_layer(dst) + o, vm_read32(ex_layer(src) + o));
+}
+
+/* The rect-table entry (func_0003232C) of a screen, or 0. */
+static uint32_t ex_rect_entry(uint32_t screen)
+{
+    const uint32_t T = vm_read32(EX_RECTS_TOC);
+    for (uint32_t i = 0; i < 0x1A; i++)
+        if (vm_read32(T + i * 0x2C) == screen) return T + i * 0x2C;
+    return 0;
+}
+
+/* Before the game runs: copy the layer array with the new layers, point the
+ * TOC entry at it, and adjust screens 12, 13 and 57 and their rect entries.
+ * Both Exit items are in their screens from the start but unlinked until the
+ * label exists. */
+static void ex_init(void)
+{
+    const char* e = getenv("ICO_EXIT_ITEM");
+    if (e && *e == '0') return;
+    const uint32_t r12 = ex_rect_entry(12), r13 = ex_rect_entry(13), r57 = ex_rect_entry(57);
+    if (vm_read32(EX_TOC_LAYERS) != EX_OLD_LAYERS || vm_read32(ex_screen(12)) != 0x31u ||
+        vm_read32(ex_screen(12) + 4) != 0x33u || vm_read32(ex_screen(13)) != 0x33u ||
+        vm_read32(ex_screen(13) + 4) != 0x34u || vm_read32(ex_screen(57)) != 0x124u ||
+        vm_read32(ex_screen(57) + 4) != 0x129u || vm_read32(ex_screen(58)) != 0x129u ||
+        !r12 || !r13 || !r57 ||
+        vm_read32(r12 + 4) != 0x30u || vm_read32(r12 + 8) != 0x32u ||
+        vm_read32(r13 + 4) != 0x33u || vm_read32(r13 + 8) != 0x34u ||
+        vm_read32(r57 + 4) != 0x124u || vm_read32(r57 + 8) != 0x129u) {
+        fprintf(stderr, "[ico] exit item: menu tables not as expected -- off\n");
+        return;
+    }
+    for (uint32_t o = 0; o < EX_N_OLD * 0x70u; o += 4)
+        vm_write32(EX_NEW_LAYERS + o, vm_read32(EX_OLD_LAYERS + o));
+    ex_copy_layer(EX_S13, 0x33);
+    vm_write32(ex_layer(EX_S13) + 0x6C, vm_read32(ex_layer(EX_S13) + 0x6C) & ~0x04000000u);
+    ex_copy_layer(EX_TEXIT, 0x32);
+    ex_copy_layer(EX_PREC, 0x128);
+    /* Back's rect (U 128-256, V 20-40) reaches into the label's box (U 196+);
+     * its letters end at U 189, so draw U 128-192 at the same 1:1 width. */
+    if (vm_read32(ex_layer(0x127) + 0x5C) == 128u && vm_read32(ex_layer(0x127) + 0x68) == 20u &&
+        vm_read32(ex_layer(0x127) + 0x64) == 128u && vm_read32(ex_layer(0x127) + 0x4C) == 128u) {
+        vm_write32(ex_layer(0x127) + 0x64, 64);
+        vm_write32(ex_layer(0x127) + 0x4C, 64);
+    }
+    const uint32_t ex[2] = { EX_TEXIT, EX_PREC };
+    for (int k = 0; k < 2; k++) {
+        const uint32_t L = ex_layer(ex[k]);
+        for (uint32_t o = 0x20; o < 0x40; o += 4) vm_write32(L + o, 0xFFFFFFFFu);
+        vm_write32(L + 0x2C, EX_EXIT_SCREEN);
+        vm_write32(L + 0x4C, 0);                      /* no width override */
+        vm_write32(L + 0x5C, EX_BX / 2); vm_write32(L + 0x68, EX_BY / 2);
+        vm_write32(L + 0x64, EX_BW / 2); vm_write32(L + 0x60, EX_BH / 2);
+    }
+    vm_write32(ex_layer(EX_PREC) + 0x3C, 0x128);
+    vm_write32(ex_layer(EX_TEXIT) + 0x6C, vm_read32(ex_layer(EX_TEXIT) + 0x6C) & ~0x0C000000u);
+    /* Title, 30 apart as before and moved up by 15 to stay centred: Continue
+     * 120, New Game 150, Exit 180 -- written as 200, since only 0x31/0x32 get
+     * +240 on screen (y = 12*Y - 1356 for the rest). Pause: Exit 20 below
+     * Return, the spacing of Options and Back. */
+    vm_write32(ex_layer(0x31) + 0x50, 120);
+    vm_write32(ex_layer(0x32) + 0x50, 150);
+    vm_write32(ex_layer(EX_TEXIT) + 0x50, 200);
+    vm_write32(ex_layer(EX_PREC) + 0x50, vm_read32(ex_layer(0x128) + 0x50) + 20);
+    vm_write32(EX_TOC_LAYERS, EX_NEW_LAYERS);
+    vm_write32(ex_screen(12) + 4, EX_TEXIT + 1);
+    vm_write32(ex_screen(13), EX_S13); vm_write32(ex_screen(13) + 4, EX_S13 + 1);
+    vm_write32(ex_screen(13) + 0x28, EX_S13); vm_write32(ex_screen(13) + 0x2C, EX_S13);
+    vm_write32(ex_screen(57) + 4, EX_PEXIT + 1);
+    /* rect entries, ranges inclusive (57's already reaches 0x129) */
+    vm_write32(r12 + 8, EX_TEXIT);
+    vm_write32(r13 + 4, EX_S13); vm_write32(r13 + 8, EX_S13 + 1);
+    s_ex_on = 1;
+    fprintf(stderr, "[ico] exit item: menu layers copied to 0x%08X\n", EX_NEW_LAYERS);
+}
+
+/* Link the Exit items in (or out) of both menus. */
+static void ex_link(int on)
+{
+    const uint32_t none = 0xFFFFFFFFu;
+    vm_write32(ex_layer(0x32) + 0x38, on ? EX_TEXIT : none);
+    vm_write32(ex_layer(EX_TEXIT) + 0x3C, 0x32);
+    vm_write32(ex_layer(0x128) + 0x38, on ? EX_PEXIT : none);
+    s_ex_linked = on;
+}
+
+/* Every pass of the frame loop. */
+static void ex_tick(void)
+{
+    if (!s_ex_on) return;
+    const uint32_t cur0 = vm_read32(EX_CUR_SCREEN);
+    { const uint32_t s = vm_read32(ex_screen(13) + 0x2C);
+      if (s == 0x33u) vm_write32(ex_screen(13) + 0x2C, EX_S13); }
+    /* screen 13's moved layer follows the hide bit its handler sets on 0x33
+     * (only while screen 13 is up: on the title menu the draw loop clears it) */
+    if (cur0 == 13u) {
+        const uint32_t f = vm_read32(ex_layer(EX_S13) + 0x6C);
+        const uint32_t h = vm_read32(ex_layer(EX_TEXIT) + 0x6C) & 0x08000000u;
+        if ((f & 0x08000000u) != h) vm_write32(ex_layer(EX_S13) + 0x6C, (f & ~0x08000000u) | h);
+    }
+    /* 0x129: the pause Exit while the pause is up, Options' bar otherwise */
+    if (cur0 == 57u && !s_ex_p129) {
+        ex_copy_layer(EX_BAR, EX_PEXIT);
+        for (uint32_t o = 0; o < 0x70u; o += 4)
+            if (o < 0x14 || o > 0x1C)   /* texture fields: the resolved ones of Return */
+                vm_write32(ex_layer(EX_PEXIT) + o, vm_read32(ex_layer(EX_PREC) + o));
+        for (uint32_t o = 0x14; o <= 0x1C; o += 4)
+            vm_write32(ex_layer(EX_PEXIT) + o, vm_read32(ex_layer(0x128) + o));
+        s_ex_p129 = 1;
+    } else if (cur0 != 57u && s_ex_p129) {
+        if (vm_read32(ex_screen(57) + 0x2C) == EX_PEXIT) vm_write32(ex_screen(57) + 0x2C, 0x128);
+        ex_copy_layer(EX_PEXIT, EX_BAR);
+        s_ex_p129 = 0;
+    }
+
+    const uint32_t cur = vm_read32(EX_CUR_SCREEN);
+    if (cur == EX_EXIT_SCREEN) {
+        fprintf(stderr, "[ico] Exit Game chosen -- exiting\n");
+        fflush(stdout); fflush(stderr);
+        TerminateProcess(GetCurrentProcess(), 0);
+    }
+    /* The label: look for the texture while a menu is up, re-check it now and
+     * then (a reload brings back the unpatched sheet). */
+    static ULONGLONG last = 0, last_scan = 0;
+    const ULONGLONG now = GetTickCount64();
+    if ((cur == 12u || cur == 57u) && now - last > 1000) {
+        last = now;
+        int ok = 0;
+        for (int i = 0; i < s_ex_ntex; i++)
+            if (ex_patch_texture(s_ex_tex[i]) != 0) ok++;   /* -1 = already patched */
+        if ((!ok || ok != s_ex_ntex) && (!last_scan || now - last_scan > 10000)) {
+            last_scan = now;
+            const ULONGLONG t0 = GetTickCount64();
+            ex_find_textures();
+            fprintf(stderr, "[ico] exit item: %d menu texture copies found in %llu ms\n",
+                    s_ex_ntex, (unsigned long long)(GetTickCount64() - t0));
+            ok = 0;
+            for (int i = 0; i < s_ex_ntex; i++) {
+                const int r = ex_patch_texture(s_ex_tex[i]);
+                if (r != 0) ok++;
+                if (r == 1) fprintf(stderr, "[ico] exit item: label written into menu texture at 0x%08X\n", s_ex_tex[i]);
+            }
+        }
+        if ((ok > 0) != s_ex_linked) ex_link(ok > 0);
+    }
+}
+
 static DWORD WINAPI frame_clock(LPVOID)
 {
     const char* title = getenv("PS3_TITLE");
@@ -530,7 +899,12 @@ static DWORD WINAPI frame_clock(LPVOID)
             rsx_ok ? "OK -- window open" : "FAILED");
 
     unsigned  last_flip = 0;
-    ULONGLONG next_tick = GetTickCount64();
+    /* The vblank beat: exactly 60 Hz on the QPC clock. ICO takes its frame
+     * time from vblanks elapsed (dt = vblanks / 60); `+= 16` ms on
+     * GetTickCount64 was 62.5 Hz and ran the whole game ~4% fast. Tick k is
+     * due at tick_q0 + k * freq / 60. */
+    LARGE_INTEGER tick_fq; QueryPerformanceFrequency(&tick_fq);
+    LONG64 tick_q0 = fc_now(); unsigned long long tick_k = 0;
     { const char* e = getenv("ICO_FC_WAKE");
       if (e && atoi(e) > 0) {
           s_fc_wake_ev = CreateEventW(NULL, FALSE, FALSE, NULL);   /* auto-reset */
@@ -544,10 +918,10 @@ static DWORD WINAPI frame_clock(LPVOID)
           if (s_fc_wake_on) WaitForSingleObject(s_fc_wake_ev, 4); else Sleep(4);
           InterlockedAdd64(&s_fc_sleep, fc_now() - a); }
         InterlockedIncrement(&s_fc_iters);
-        ULONGLONG now = GetTickCount64();
-
         int fired = 0;
-        while ((long long)(now - next_tick) >= 0 && fired < 240) {
+        const LONG64 now_q = fc_now();
+        while (now_q - (tick_q0 + (LONG64)(tick_k * (unsigned long long)tick_fq.QuadPart / 60ull)) >= 0
+               && fired < 240) {
             cellGcmTickVBlank();
             cellGcmTickFlip();
             /* Present a pending flip BEFORE draining any further. The flip
@@ -563,10 +937,50 @@ static DWORD WINAPI frame_clock(LPVOID)
              * labels the game's per-frame logic blocks on, so it has to keep
              * advancing at 60 Hz even while present() throttles. */
             if (rsx_ok) fc_drain();
-            next_tick += 16;             /* ~60 Hz */
+            tick_k++;
             fired++;
         }
-        if (fired >= 240) next_tick = now;   /* fell too far behind -- resync */
+        if (fired >= 240) { tick_q0 = now_q; tick_k = 0; }   /* fell too far behind -- resync */
+
+        ex_tick();
+
+        /* ICO_60FPS=1: render every logic step instead of every second one.
+         *
+         * ICO's main loop (func_00027BC4) runs its game logic in fixed 1/60 s
+         * steps and draws a frame every [0x4D1DDC] steps -- 2, i.e. 30 fps --
+         * then flips every [gfx+0x384] vblanks, also 2. Cutscenes, animation
+         * and physics advance per STEP, not per second (measured: forcing 15
+         * fps took twice the wall time for the same cutscene), so only
+         * flipping more often ran the game at 2x. Setting both to 1 draws
+         * and flips once per step: 60 fps at the original game speed, and a
+         * frame the PC cannot finish in time slows the game the way a dropped
+         * frame did on the PS3. Movies keep their own interval (1). */
+        { static int f60 = -1;
+          if (f60 < 0) { const char* e = getenv("ICO_60FPS"); f60 = (e && atoi(e) > 0) ? 1 : 0;
+                         if (f60) fprintf(stderr, "[ico] ICO_60FPS: 1 logic step per frame\n"); }
+          if (f60) {
+              /* Cutscenes, event scenes and the title advance per DRAWN frame
+               * and ignore the setting above, so they would run at 2x. They
+               * all hold [0xA16F00] non-zero (the title's "event in progress,
+               * player input off" flag: 1 in the opening, the title, every
+               * cutscene and in-game event, 0 in play -- measured over a
+               * played session). While it is set, keep the original 30 fps. */
+              const uint32_t want = vm_read32(0xA16F00u) ? 2u : 1u;
+              const uint32_t cur = vm_read32(0x4D1DDCu);
+              if ((cur == 1u || cur == 2u) && cur != want) vm_write32(0x4D1DDCu, want);
+              const uint32_t gfx = vm_read32(0xB0C15Cu);
+              if (gfx) {
+                  /* Movies set the interval to 1 themselves: change only the
+                   * title's own 2 or a 1 this code wrote, never a movie's 1. */
+                  static uint32_t mine = 0;
+                  const uint32_t iv = vm_read32(gfx + 0x384);
+                  if (iv != want && (iv == 2u || (iv == 1u && mine == 1u))) {
+                      vm_write32(gfx + 0x384, want);
+                      mine = want;
+                  }
+              }
+          } }
+
 
         /* Drain at the outer cadence too, not only on the 16 ms tick: titles
          * fence every render pass on a label the drain writes, and one wave of
@@ -582,8 +996,13 @@ static DWORD WINAPI frame_clock(LPVOID)
             int pumped;
             { const LONG64 a = fc_now(); pumped = rsx_backend_pump(); InterlockedAdd64(&s_fc_pump, fc_now() - a); }
             if (pumped != 0) {
-                rsx_ok = 0;              /* window closed */
-                continue;
+                /* Window closed: end the process. Only stopping the present
+                 * left every guest thread running with no window. */
+                fprintf(stderr, "[ico] window closed -- exiting\n");
+                fflush(stdout); fflush(stderr);
+                /* TerminateProcess, not ExitProcess: guest threads are mid-
+                 * flight and may hold locks DLL detach would wait on. */
+                TerminateProcess(GetCurrentProcess(), 0);
             }
             /* Present on a guest flip. A present on a fixed clock can catch the
              * drain mid-frame and flash a partial one. Before the first flip
@@ -782,6 +1201,18 @@ int main(int argc, char** argv)
         fprintf(stderr, "ERROR: could not load %s\n", argv[1]);
         return 1;
     }
+
+    /* ICO_60FPS: set vblanks-per-frame to 1 in the loaded image, before any
+     * guest code runs. The game never writes [0x4D1DDC] -- it is 2 from the
+     * ELF -- and derives its frame rate from it, (60 - 10*PAL) / [0x4D1DDC],
+     * in some 230 places, some of them once at start-up. The frame clock's
+     * own write lands only after those. */
+    { const char* e = getenv("ICO_60FPS");
+      if (e && atoi(e) > 0 && vm_read32(0x4D1DDCu) == 2u) {
+          vm_write32(0x4D1DDCu, 1u);
+          fprintf(stderr, "[ico] ICO_60FPS: vblanks per frame 2 -> 1 before boot\n");
+      } }
+    ex_init();   /* "Exit Game" in the title and pause menus */
 
     derive_vfs_root(argv[1]);
     printf("[boot] VFS root: %s\n", ppu_vfs_root);
