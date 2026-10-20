@@ -21,7 +21,9 @@ Reported in #1 by @undecuple, with a smoke-test CI (#3).
 ### Installer and pipeline
 - **Updates apply changed defaults**: an `ico.ini` key the user never edited
   takes the new release's default; edited keys are kept (`install.json`
-  records the defaults each install wrote).
+  records the defaults each install wrote). Installs from 0.1.0 to 0.2.1
+  recorded none, so their first update to 0.2.2 keeps `ico.ini` as it is;
+  changed defaults reach them from the update after that.
 - `ICO.self` is checked against its SHA-256 before decryption, and a stale
   `ICO.elf` from an earlier run is removed first.
 - Error messages name the failing program or script (no more "-S failed").
