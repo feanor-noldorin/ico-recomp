@@ -54,6 +54,7 @@ $exe = Join-Path $out 'ICO.PC.Port.Setup.exe'
 $hash = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLower()
 "$hash  ICO.PC.Port.Setup.exe" | Set-Content -Encoding ascii (Join-Path $out 'ICO.PC.Port.Setup.exe.sha256')
 # SHA256SUMS.txt is uploaded next to the exe in each release (sha256sum -c format)
-"$hash  ICO.PC.Port.Setup.exe" | Set-Content -Encoding ascii (Join-Path $out 'SHA256SUMS.txt')
+# LF line ending: with CRLF, GNU `sha256sum -c` reads the name as "...exe"
+[IO.File]::WriteAllText((Join-Path $out 'SHA256SUMS.txt'), "$hash  ICO.PC.Port.Setup.exe`n")
 '{0}  ({1:N1} MB)' -f $exe, ((Get-Item $exe).Length / 1MB)
 "SHA-256 $hash"
