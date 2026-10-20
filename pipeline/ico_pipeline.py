@@ -391,7 +391,7 @@ def build(a, port, env, sdl2_cmake: Path | None) -> Path:
          "-DPORT_SPU_INPUTS=",
          f"-DCMAKE_C_FLAGS_RELEASE={flags}",
          f"-DCMAKE_CXX_FLAGS_RELEASE={flags}",
-         *([f"-DPS3RECOMP_PAD_SDL2=ON", f"-DSDL2_DIR={sdl2_cmake}"] if sdl2_cmake
+         *(["-DPS3RECOMP_PAD_SDL2=ON", f"-DSDL2_DIR={sdl2_cmake}"] if sdl2_cmake
            else ["-DPS3RECOMP_PAD_SDL2=OFF"])], env=env)
 
     step(10)
