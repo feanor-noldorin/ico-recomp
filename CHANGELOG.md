@@ -2,6 +2,37 @@
 
 All notable changes to the ICO PC port. Dates are YYYY-MM-DD.
 
+## [0.2.2] — 2026-10-20 — fixes from review
+
+Reported in #1 by @undecuple, with a smoke-test CI (#3).
+
+### Game
+- **Exit Game label**: the menu texture is re-identified by its content
+  hashes before every write, so the label is never written into memory the
+  game has reused; a texture that is not found is searched for at most three
+  times instead of every 10 s (each search briefly paused the frame clock).
+- **Logs**: the previous run's log is kept as `ico.prev.log`; an
+  `ICO_LOG_FILE` given as a UNC or rooted path is honoured; a missing
+  `data\ICO.elf` now shows a message instead of exiting silently.
+- **Fibers**: re-initialising the fiber that is running no longer frees it
+  under itself (`cellFiberPpuContextInitialize`).
+- `ico.exe` and the installer now report their real version (were 0.1.0).
+
+### Installer and pipeline
+- **Updates apply changed defaults**: an `ico.ini` key the user never edited
+  takes the new release's default; edited keys are kept (`install.json`
+  records the defaults each install wrote).
+- `ICO.self` is checked against its SHA-256 before decryption, and a stale
+  `ICO.elf` from an earlier run is removed first.
+- Error messages name the failing program or script (no more "-S failed").
+- `tomli` (pulled in on Python 3.10) is pinned; the CRLF `.sha256` sidecar is
+  gone (`SHA256SUMS.txt` is the checksum file).
+
+### Project
+- **CI** (`.github/workflows/ci.yml`): smoke tests on Linux and Windows, ruff
+  lint, installer build; `docs/TESTING.md`.
+- README credits ps3recomp's MIT licence.
+
 ## [0.2.1] — 2026-10-19 — installer and transparency
 
 No change to the game itself; the recompiled game is identical to 0.2.0.

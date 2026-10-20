@@ -2,7 +2,7 @@
 
 **English** · [Português (Brasil)](README.pt-BR.md)
 
-> **Status — v0.2.1 (alpha):** boots to the title menu, plays the opening
+> **Status — v0.2.2 (alpha):** boots to the title menu, plays the opening
 > cinematic and is playable: Ico walks, climbs and leads Yorda at **60 fps
 > with the game's original speed** on the development PC (cinematics stay at
 > their original 30). DualSense / DualShock 4 and XInput controllers work.
@@ -114,7 +114,8 @@ diagonals keep their full speed (`PAD_SQUIRCLE=1`, default).
 
 Run settings live in `ico.ini` next to `ico.exe`; see
 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md). The game's log is
-`<install>\logs\ico.log` — attach it to bug reports.
+`<install>\logs\ico.log` — attach it to bug reports. The previous run's log
+is kept as `ico.prev.log`, so a crash log survives a relaunch.
 
 ---
 
@@ -241,7 +242,10 @@ and must not be redistributed. Decryption is done by your own copy of RPCS3.
 
 ICO is © Sony Interactive Entertainment. This project is not affiliated with
 or endorsed by Sony or Team ICO / genDESIGN. The code in this repository is
-under the [MIT License](LICENSE). The icon of the installed `ico.exe` is not
+under the [MIT License](LICENSE). The installer also carries the
+[ps3recomp](https://github.com/sp00nznet/ps3recomp) toolkit, MIT License,
+Copyright (c) 2026 Ned Heller / sp00nznet; its licence is in
+`external/ps3recomp/LICENSE`. The icon of the installed `ico.exe` is not
 part of this repository either: the installer cuts it from the `ICON0.PNG` of
 your own copy, and the "Exit Game" label is assembled at run time from the
 letters of your copy's own menu texture. [SDL2](https://www.libsdl.org) (zlib

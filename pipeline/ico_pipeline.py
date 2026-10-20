@@ -112,7 +112,16 @@ def run(cmd: list, cwd: Path | None = None, env: dict | None = None,
         if on_line:
             on_line(line)
     if p.wait() != 0:
-        raise PipelineError(f"{Path(str(cmd[1] if len(cmd) > 1 else cmd[0])).name} failed (exit {p.returncode})")
+        raise PipelineError(f"{command_name(cmd)} failed (exit {p.returncode})")
+
+
+def command_name(cmd: list) -> str:
+    """What a failed command is called in the error: the program, or for a
+    Python interpreter the script it ran ("ppu_lifter.py", not "-S")."""
+    prog = Path(str(cmd[0])).name
+    if prog.lower().startswith("python") and len(cmd) > 1 and str(cmd[1]).endswith(".py"):
+        return Path(str(cmd[1])).name
+    return prog
 
 
 # ------------------------------------------------------------------ toolchain --
@@ -167,6 +176,8 @@ def check_inputs(a, prof) -> Path:
 
     work_elf = a.work / "input" / "ICO.elf"
     work_elf.parent.mkdir(parents=True, exist_ok=True)
+    if work_elf.exists():                   # never reuse a previous run's ELF
+        work_elf.unlink()
     if a.elf:
         shutil.copyfile(a.elf, work_elf)
     else:
@@ -175,6 +186,12 @@ def check_inputs(a, prof) -> Path:
         self_src = gd / prof["game_files"]["self"]
         if not self_src.exists():
             raise PipelineError(f"{self_src} is missing.")
+        want = prof["game_files"].get("self_sha256")
+        if want and sha256(self_src) != want:
+            msg = f"{self_src.name} is not the tested US release (SHA-256 differs)."
+            if not a.allow_unknown:
+                raise PipelineError(msg + " Only the US release (BCUS98259) is supported.")
+            warn(msg)
         stage = a.work / "input" / "ICO.self"
         shutil.copyfile(self_src, stage)    # decrypt a copy: never write into the dump
         log("Decrypting ICO.self with your RPCS3 ...")
@@ -426,18 +443,33 @@ def install(a, prof, exe, elf) -> None:
               "PS3_DEV_FLASH": a.dev_flash.as_posix(),
               "ICO_LOG_FILE": "logs/ico.log", **prof["runtime_env"]}
     managed = {"PS3_VFS_ROOT", "PS3_DEV_FLASH"}  # always rewritten from this install
+    # The defaults the last install wrote: a key that still holds its old
+    # default was never edited, so it takes the new default; anything else is
+    # the user's own and is kept.
+    meta = a.install / "install.json"
+    try:
+        old_defaults = json.loads(meta.read_text(encoding="utf-8")).get("ini_defaults", {})
+    except (OSError, ValueError):
+        old_defaults = {}
+    defaults = dict(values)
     if ini.exists():                        # an update keeps the user's own edits
         for line in ini.read_text(encoding="utf-8").splitlines():
             k, sep, v = line.partition("=")
-            if sep and not line.lstrip().startswith(";") and k.strip() not in managed:
-                values[k.strip()] = v.strip()
+            k, v = k.strip(), v.strip()
+            if not sep or line.lstrip().startswith(";") or k in managed:
+                continue
+            if k in old_defaults and v == old_defaults[k] and k in defaults:
+                continue                    # untouched old default: the new one wins
+            values[k] = v
     ini.write_text("; ICO PC port settings. Each KEY=VALUE becomes an environment variable\n"
                    "; for the game unless it is already set. See docs/ENVIRONMENT.md.\n" +
                    "".join(f"{k}={v}\n" for k, v in values.items()), encoding="utf-8")
-    (a.install / "install.json").write_text(json.dumps({
+    meta.write_text(json.dumps({
         "version": a.version, "installed": time.strftime("%Y-%m-%d %H:%M:%S"),
         "game_dir": str(a.game_dir), "dev_flash": str(a.dev_flash),
-        "link_mode": a.link_mode, "simd": a.simd}, indent=2), encoding="utf-8")
+        "link_mode": a.link_mode, "simd": a.simd,
+        "ini_defaults": {k: v for k, v in defaults.items() if k not in managed}}, indent=2),
+        encoding="utf-8")
     log(f"Installed to {a.install}")
 
 

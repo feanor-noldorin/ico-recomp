@@ -1,7 +1,7 @@
 """Smoke tests for the install pipeline: no game files, no Windows, no network.
 
 Run from the repository root:  python -m unittest discover -s tests -v
-(or `nix flake check`). They cover what can break before a player ever
+They cover what can break before a player ever
 reaches the compile step: the profile, the pipeline's argument and input
 checks, the pinned dependencies, and the release script.
 """
@@ -96,7 +96,7 @@ class ConstraintsTests(unittest.TestCase):
             line = line.strip()
             if not line or line.startswith("#"):
                 continue
-            m = re.fullmatch(r"([A-Za-z0-9_.-]+)==(\d+(?:\.\d+)*)", line)
+            m = re.fullmatch(r"([A-Za-z0-9_.-]+)==(\d+(?:\.\d+)*)(\s*;\s*python_version\s*[<>=!]+\s*\"[\d.]+\")?", line)
             self.assertIsNotNone(m, f"not an exact pin: {line!r}")
             out[m.group(1).lower()] = m.group(2)
         return out
@@ -111,7 +111,7 @@ class ConstraintsTests(unittest.TestCase):
         pins = self.pins()
         for line in req.read_text(encoding="utf-8").splitlines():
             m = re.match(r"([A-Za-z0-9_.-]+)\s*[<>=!~]", line.split(";")[0].strip())
-            if m and "python_version" not in line:
+            if m:                                       # conditional ones (tomli) too
                 self.assertIn(m.group(1).lower(), pins, f"{m.group(1)} is not pinned")
 
 
@@ -233,9 +233,8 @@ class InstallTests(unittest.TestCase):
             self.assertNotIn("PS3_VFS_ROOT=stale", text)            # the managed paths do not
             self.assertEqual(json.loads((a.install / "install.json").read_text())["version"], "t")
 
-    @unittest.expectedFailure
     def test_update_applies_changed_profile_defaults(self):
-        """Known gap: an untouched key keeps its old default across an update."""
+        """An untouched key takes the new default on update; an edited one stays."""
         prof = load_profile()
         with tempfile.TemporaryDirectory() as td:
             t = Path(td)
@@ -246,9 +245,16 @@ class InstallTests(unittest.TestCase):
                                 version="t", link_mode="copy", simd="avx2")
             prof["runtime_env"]["GCM_PREPAREFLIP_QUEUE"] = "0"
             ip.install(a, prof, exe, elf)
+            ini = a.install / "ico.ini"
+            ini.write_text(ini.read_text().replace("ICO_60FPS=1", "ICO_60FPS=0"), encoding="utf-8")
             prof["runtime_env"]["GCM_PREPAREFLIP_QUEUE"] = "1"      # the next release changes the default
             ip.install(a, prof, exe, elf)
-            self.assertIn("GCM_PREPAREFLIP_QUEUE=1", (a.install / "ico.ini").read_text())
+            text = ini.read_text()
+            self.assertIn("GCM_PREPAREFLIP_QUEUE=1", text)          # untouched: new default
+            self.assertIn("ICO_60FPS=0", text)                      # edited by the user: kept
+            prof["runtime_env"]["ICO_60FPS"] = "1"
+            ip.install(a, prof, exe, elf)
+            self.assertIn("ICO_60FPS=0", ini.read_text())           # still the user's
 
 
 class IconFallbackTests(unittest.TestCase):
@@ -290,6 +296,19 @@ class RepositoryHygieneTests(unittest.TestCase):
         s = (ROOT / "installer" / "ICOSetup" / "MainForm.cs").read_text(encoding="utf-8")
         self.assertIn("constraints.txt", s)
         self.assertIn('"-c"', s)
+
+    def test_versions_agree(self):
+        """ico.exe, its CMake project and the installer carry one version."""
+        csproj = (ROOT / "installer" / "ICOSetup" / "ICOSetup.csproj").read_text(encoding="utf-8")
+        v = re.search(r"<Version>(\d+\.\d+\.\d+)</Version>", csproj).group(1)
+        rc = (ROOT / "port" / "app.rc").read_text(encoding="utf-8")
+        cmake = (ROOT / "port" / "CMakeLists.txt").read_text(encoding="utf-8")
+        manifest = (ROOT / "installer" / "ICOSetup" / "app.manifest").read_text(encoding="utf-8")
+        self.assertIn(f'"FileVersion", "{v}"', rc)
+        self.assertIn(f'"ProductVersion", "{v}"', rc)
+        self.assertIn(f"FILEVERSION {v.replace('.', ',')},0", rc)
+        self.assertRegex(cmake, rf"\bVERSION {re.escape(v)}\b")
+        self.assertIn(f'assemblyIdentity version="{v}.0"', manifest)
 
     def test_python_sources_compile(self):
         for f in list(PIPELINE.glob("*.py")) + list((ROOT / "tools").glob("*.py")):

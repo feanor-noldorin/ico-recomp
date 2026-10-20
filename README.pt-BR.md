@@ -2,7 +2,7 @@
 
 [English](README.md) · **Português (Brasil)**
 
-> **Status — v0.2.1 (alfa):** inicia até o menu principal, roda a cinemática
+> **Status — v0.2.2 (alfa):** inicia até o menu principal, roda a cinemática
 > de abertura e já é jogável: o Ico anda, escala e conduz a Yorda a **60 fps
 > com a velocidade original do jogo** no PC de desenvolvimento (as
 > cinemáticas mantêm os 30 originais). Controles DualSense / DualShock 4 e
@@ -127,7 +127,8 @@ O **Exit Game** fica no fim do menu principal e do menu de pausa.
 
 As configurações ficam no `ico.ini`, ao lado do `ico.exe` (veja
 [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md)). O log do jogo é
-`<instalação>\logs\ico.log`: anexe-o aos relatos de bug.
+`<instalação>\logs\ico.log`: anexe-o aos relatos de bug. O log da execução
+anterior fica em `ico.prev.log`, então o log de um crash sobrevive à reabertura.
 
 ---
 
@@ -239,7 +240,10 @@ cópia do RPCS3.
 
 ICO é © Sony Interactive Entertainment. Este projeto não tem vínculo nem aval
 da Sony nem da Team ICO / genDESIGN. O código deste repositório está sob a
-[licença MIT](LICENSE). O ícone do `ico.exe` instalado também não faz parte
+[licença MIT](LICENSE). O instalador também leva o toolkit
+[ps3recomp](https://github.com/sp00nznet/ps3recomp), licença MIT,
+Copyright (c) 2026 Ned Heller / sp00nznet; a licença dele está em
+`external/ps3recomp/LICENSE`. O ícone do `ico.exe` instalado também não faz parte
 deste repositório: o instalador o recorta do `ICON0.PNG` da sua própria cópia,
 e o rótulo "Exit Game" é montado durante a execução com as letras da textura de
 menu da sua própria cópia. O [SDL2](https://www.libsdl.org) (licença zlib) é

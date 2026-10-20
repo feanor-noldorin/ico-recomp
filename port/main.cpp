@@ -627,16 +627,36 @@ static void ex_put(uint32_t base, uint32_t l, uint32_t x, uint32_t y, const uint
     p[1] = c[0]; p[2] = c[1]; p[3] = c[2]; p[0] = c[3];
 }
 
+/* menu_PAL_03 (US) is recognised by two 256-byte content hashes at known
+ * level-0 offsets, both outside the box the label goes into. */
+static const struct { uint32_t off; uint64_t hash; } EX_SIG[2] = {
+    { 0x144C00u, 0xCF4B6C0B6CFDE50Cull },   /* "New Game" */
+    { 0x06B100u, 0x22B9A787DEC12825ull },   /* "Film Effect" */
+};
+static const uint32_t EX_SPAN = 0x2AAAACu;  /* all 11 levels */
+
+static bool ex_tex_valid(uint32_t base)
+{
+    for (const auto& s : EX_SIG)
+        if (ex_fnv(vm_base + base + s.off, 256) != s.hash) return false;
+    return true;
+}
+
 /* Destination of the label in level 0 (texture pixels) and its UV box. */
 static const uint32_t EX_BX = 392, EX_BY = 40, EX_BW = 242, EX_BH = 40;
 
 /* Compose "Exit Game" from the texture's own glyphs into the free box, then
- * rebuild that box in every mip. Returns 0 when the box is not empty (another
- * language's sheet, or a layout this does not know). Alpha is PS2-range
- * (0..128); letters are combined with "over". */
+ * rebuild that box in every mip. Alpha is PS2-range (0..128); letters are
+ * combined with "over". Returns
+ *    1  the label was written,
+ *   -1  the box is already in use: in the US sheet it is empty until the label
+ *       goes in, so that is the label,
+ *    0  the label does not fit,
+ *   -2  `base` no longer holds the menu texture (the memory was reused):
+ *       nothing is written. */
 static int ex_patch_texture(uint32_t base)
 {
-    /* already ours? (the box's top-left corner stays transparent) */
+    if (!ex_tex_valid(base)) return -2;
     for (uint32_t y = EX_BY; y < EX_BY + EX_BH; y++)
         for (uint32_t x = EX_BX; x < EX_BX + EX_BW; x++) {
             uint8_t c[4]; ex_get(base, 0, x, y, c);
@@ -711,11 +731,6 @@ static int ex_patch_texture(uint32_t base)
  * by two 256-byte content hashes at known level-0 offsets, 128-byte aligned. */
 static void ex_find_textures(void)
 {
-    static const struct { uint32_t off; uint64_t hash; } SIG[2] = {
-        { 0x144C00u, 0xCF4B6C0B6CFDE50Cull },   /* "New Game" */
-        { 0x06B100u, 0x22B9A787DEC12825ull },   /* "Film Effect" */
-    };
-    const uint32_t SPAN = 0x2AAAACu;
     s_ex_ntex = 0;
     const uint32_t ranges[2][2] = { { 0x30000000u, 0x50000000u }, { 0xC0000000u, 0xD0000000u } };
     for (int r = 0; r < 2; r++) {
@@ -727,11 +742,11 @@ static void ex_find_textures(void)
             if (end > ranges[r][1]) end = ranges[r][1];
             if (mb.State == MEM_COMMIT && !(mb.Protect & (PAGE_NOACCESS | PAGE_GUARD))) {
                 for (uint64_t p = (a + 127) & ~127ull; p + 256 <= end; p += 128) {
-                    if (ex_fnv(vm_base + p, 256) != SIG[0].hash) continue;
-                    if (p < SIG[0].off) continue;
-                    const uint64_t base = p - SIG[0].off;
-                    if (base + SPAN > ranges[r][1]) continue;
-                    if (ex_fnv(vm_base + base + SIG[1].off, 256) != SIG[1].hash) continue;
+                    if (ex_fnv(vm_base + p, 256) != EX_SIG[0].hash) continue;
+                    if (p < EX_SIG[0].off) continue;
+                    const uint64_t base = p - EX_SIG[0].off;
+                    if (base + EX_SPAN > ranges[r][1]) continue;
+                    if (ex_fnv(vm_base + base + EX_SIG[1].off, 256) != EX_SIG[1].hash) continue;
                     if (s_ex_ntex < 4) s_ex_tex[s_ex_ntex++] = (uint32_t)base;
                 }
             }
@@ -865,23 +880,32 @@ static void ex_tick(void)
     }
     /* The label: look for the texture while a menu is up, re-check it now and
      * then (a reload brings back the unpatched sheet). */
+    /* A scan hashes up to ~0.5 GB on this thread (~0.4 s), so it runs only
+     * when no copy is known, and after three empty ones it stops: on a sheet
+     * this does not recognise the Exit items simply stay unlinked. */
     static ULONGLONG last = 0, last_scan = 0;
+    static int empty_scans = 0;
     const ULONGLONG now = GetTickCount64();
     if ((cur == 12u || cur == 57u) && now - last > 1000) {
         last = now;
-        int ok = 0;
-        for (int i = 0; i < s_ex_ntex; i++)
-            if (ex_patch_texture(s_ex_tex[i]) != 0) ok++;   /* -1 = already patched */
-        if ((!ok || ok != s_ex_ntex) && (!last_scan || now - last_scan > 10000)) {
+        int ok = 0, n = 0;
+        for (int i = 0; i < s_ex_ntex; i++) {
+            const int r = ex_patch_texture(s_ex_tex[i]);
+            if (r == -2) continue;                  /* memory reused: forget it */
+            s_ex_tex[n++] = s_ex_tex[i];
+            if (r == 1 || r == -1) ok++;
+        }
+        s_ex_ntex = n;
+        if (!s_ex_ntex && empty_scans < 3 && (!last_scan || now - last_scan > 10000)) {
             last_scan = now;
             const ULONGLONG t0 = GetTickCount64();
             ex_find_textures();
             fprintf(stderr, "[ico] exit item: %d menu texture copies found in %llu ms\n",
                     s_ex_ntex, (unsigned long long)(GetTickCount64() - t0));
-            ok = 0;
+            empty_scans = s_ex_ntex ? 0 : empty_scans + 1;
             for (int i = 0; i < s_ex_ntex; i++) {
                 const int r = ex_patch_texture(s_ex_tex[i]);
-                if (r != 0) ok++;
+                if (r == 1 || r == -1) ok++;
                 if (r == 1) fprintf(stderr, "[ico] exit item: label written into menu texture at 0x%08X\n", s_ex_tex[i]);
             }
         }
@@ -1139,16 +1163,29 @@ static void load_ico_ini(void)
 
 /* ICO_LOG_FILE=<path>: send stdout/stderr to a file instead of the console,
  * and drop the console window. The shortcut the installer creates uses it. */
+static int s_log_redirected = 0;
 static void redirect_log(void)
 {
     const char* lf = getenv("ICO_LOG_FILE");
     if (!lf || !*lf) return;
     char path[MAX_PATH * 2];
-    if (lf[0] && lf[1] == ':') snprintf(path, sizeof path, "%s", lf);
+    /* absolute: a drive ("C:..."), a UNC path or a rooted one ("\\..." or "/...") */
+    const bool is_abs = (lf[0] && lf[1] == ':') || lf[0] == '\\' || lf[0] == '/';
+    if (is_abs) snprintf(path, sizeof path, "%s", lf);
     else snprintf(path, sizeof path, "%s\\%s", s_exe_dir, lf);
+    /* Keep the previous run's log as <name>.prev.log: after a crash the
+     * relaunch would otherwise overwrite the only record of it. */
+    char prev[MAX_PATH * 2 + 16];
+    snprintf(prev, sizeof prev, "%s", path);
+    char* dot = strrchr(prev, '.');
+    char* sep = strrchr(prev, '\\');
+    if (dot && (!sep || dot > sep)) *dot = 0;
+    strncat(prev, ".prev.log", sizeof prev - strlen(prev) - 1);
+    MoveFileExA(path, prev, MOVEFILE_REPLACE_EXISTING);
     if (freopen(path, "w", stdout)) {
         _dup2(_fileno(stdout), _fileno(stderr));
         FreeConsole();
+        s_log_redirected = 1;
     }
 }
 
@@ -1177,6 +1214,10 @@ int main(int argc, char** argv)
       if (e && atoi(e) > 0) setvbuf(stdout, NULL, _IOFBF, 1u << 20); }
     if (argc < 2) {
         printf("usage: %s <PPU ELF>\n", argv[0]);
+        if (s_log_redirected)       /* no console to read that in: say it on screen */
+            MessageBoxA(NULL, "data\\ICO.elf was not found next to ico.exe.\n"
+                              "Run ICO PC Port Setup again to repair the installation.",
+                        "ICO", MB_OK | MB_ICONERROR);
         return 2;
     }
 

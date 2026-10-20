@@ -8,3 +8,5 @@ construct==2.10.70
 pycryptodome==4.0.0
 tabulate==0.10.0
 tqdm==4.70.1
+# requirements.txt pulls tomli in on Python < 3.11 only (the installer accepts 3.10)
+tomli==2.2.1; python_version < "3.11"

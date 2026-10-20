@@ -10,9 +10,9 @@ only the Python standard library.
 python -I -m unittest discover -s tests -v
 ```
 
-It runs the same way on Windows and Linux (see `.github/workflows/ci.yml`).
-With Nix, `nix flake check` runs the same tests plus a lint pass, and
-`nix develop` gives a shell with Python and ruff.
+It runs the same way on Windows and Linux. `.github/workflows/ci.yml` runs it
+on both, lints the Python sources with ruff, and builds the installer on
+Windows.
 
 `test_update_applies_changed_profile_defaults` is an expected failure: it
 documents that an update keeps the old value of a `ico.ini` key the user never

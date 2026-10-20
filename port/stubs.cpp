@@ -524,8 +524,13 @@ static uint64_t ico_FiberPpuContextInitialize(uint64_t context, uint64_t entry, 
     {
         std::lock_guard<std::mutex> g(s_fib_lock);
         IcoFiber*& slot = s_fibers[ea];
-        if (slot && slot->host && slot != t_cur) DeleteFiber(slot->host);
-        delete slot;
+        /* Re-initialising the context that is running right now: its host
+         * fiber and record are in use by this very call, so they are left
+         * alive (a small leak) rather than freed under it. */
+        if (slot && slot != t_cur) {
+            if (slot->host) DeleteFiber(slot->host);
+            delete slot;
+        }
         slot = f;
     }
     static int logged;
