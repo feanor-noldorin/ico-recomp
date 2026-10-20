@@ -43,7 +43,8 @@
     "alpha",
     "direct3d12",
     "installer",
-    "60fps"
+    "60fps",
+    "ai-assisted"
   ],
-  "notes": "v0.2.0 alpha: playable — Ico walks, climbs and leads Yorda at 60 fps with the original game speed (cinematics at their original 30), DualSense / DualShock 4 and XInput controllers, Exit Game in the menus. No game files included: the installer checks the user's own copy, decrypts the executable with the user's RPCS3 and recompiles it locally. Known issues: some sound effects missing, long black screen before the first cinematic, no anti-aliasing, fixed 1280x720."
+  "notes": "v0.2.1 alpha: playable in its first areas — character control at 60 fps with the original game speed (cinematics keep their original 30), DualSense / DualShock 4 and XInput controllers, Exit Game in the title and pause menus. No game files included: the installer checks the user's own copy, decrypts the executable with the user's RPCS3 and recompiles it locally; releases ship SHA256SUMS.txt and pinned Python dependencies. Developed with AI assistance (Claude), directed and tested by the maintainer. Known issues: some sound effects missing, long black screen before the first cinematic, no anti-aliasing, fixed 1280x720."
 }
