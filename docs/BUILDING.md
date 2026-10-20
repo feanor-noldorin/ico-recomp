@@ -9,7 +9,7 @@ steps by hand. Everything here runs on Windows x64.
 |---|---|
 | Git | `git clone --recursive` (the ps3recomp submodule) |
 | Visual Studio 2022/2026 or Build Tools | Components: *MSVC x64 tools*, *C++ Clang compiler for Windows*, *C++ CMake tools* |
-| Python 3.10+ | A venv with `external/ps3recomp/requirements.txt` |
+| Python 3.10+ | A venv with `external/ps3recomp/requirements.txt`, pinned by `pipeline/constraints.txt` |
 | RPCS3 + PS3 firmware | To decrypt `ICO.self` and for `dev_flash` |
 | .NET 10 SDK | Only to build the installer |
 
@@ -19,7 +19,7 @@ steps by hand. Everything here runs on Windows x64.
 git clone --recursive https://github.com/feanor-noldorin/ico-recomp.git
 cd ico-recomp
 python -m venv .venv
-.venv\Scripts\pip install -r external\ps3recomp\requirements.txt
+.venv\Scripts\pip install -r external\ps3recomp\requirements.txt -c pipeline\constraints.txt
 .venv\Scripts\python pipeline\ico_pipeline.py ^
     --game-dir "D:\dumps\ICO\PS3_GAME" ^
     --rpcs3 C:\RPCS3\rpcs3.exe ^

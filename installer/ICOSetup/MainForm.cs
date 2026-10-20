@@ -364,8 +364,12 @@ sealed class MainForm : Form
         var vpy = Path.Combine(venv, "Scripts", "python.exe");
         if (!File.Exists(vpy) && Run(_py!.Exe, new[] { "-m", "venv", venv }) != 0) return Fail("python -m venv");
         Status(S.Pip);
-        if (Run(vpy, new[] { "-m", "pip", "install", "--disable-pip-version-check", "-r",
-                Path.Combine(ps3recomp, "requirements.txt") }) != 0) return Fail("pip install");
+        // pipeline\constraints.txt pins the versions this release was tested with
+        var pip = new List<string> { "-m", "pip", "install", "--disable-pip-version-check",
+                                     "-r", Path.Combine(ps3recomp, "requirements.txt") };
+        var constraints = Path.Combine(src, "pipeline", "constraints.txt");
+        if (File.Exists(constraints)) { pip.Add("-c"); pip.Add(constraints); }
+        if (Run(vpy, pip) != 0) return Fail("pip install");
         if (_cancelRequested) return 1;
 
         // the pipeline

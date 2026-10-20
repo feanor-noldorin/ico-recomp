@@ -2,7 +2,7 @@
 
 **English** · [Português (Brasil)](README.pt-BR.md)
 
-> **Status — v0.2.0 (alpha):** boots to the title menu, plays the opening
+> **Status — v0.2.1 (alpha):** boots to the title menu, plays the opening
 > cinematic and is playable: Ico walks, climbs and leads Yorda at **60 fps
 > with the game's original speed** on the development PC (cinematics stay at
 > their original 30). DualSense / DualShock 4 and XInput controllers work.
@@ -202,7 +202,7 @@ For developers. See [docs/BUILDING.md](docs/BUILDING.md) for the details.
 git clone --recursive https://github.com/feanor-noldorin/ico-recomp.git
 cd ico-recomp
 python -m venv .venv
-.venv\Scripts\pip install -r external\ps3recomp\requirements.txt
+.venv\Scripts\pip install -r external\ps3recomp\requirements.txt -c pipeline\constraints.txt
 .venv\Scripts\python pipeline\ico_pipeline.py --game-dir "D:\dumps\ICO\PS3_GAME" --rpcs3 C:\RPCS3\rpcs3.exe --dev-flash C:\RPCS3\dev_flash --install C:\Games\ICO --python .venv\Scripts\python.exe
 ```
 
@@ -217,6 +217,18 @@ Building the installer exe: `powershell -File tools\make_release.ps1`.
 3. Keyboard + mouse, alongside the controller.
 4. Graphics settings menu: resolution, vsync, anisotropic filtering, FPS limiter.
 5. Upstream the runtime fixes to ps3recomp.
+
+---
+
+## 🤖 AI disclosure
+
+This port was developed with substantial help from an AI assistant
+(Anthropic's Claude, in Claude Code): reverse engineering of the game's code
+and data, the runtime fixes, the tooling, the installer and this
+documentation. A person — the maintainer — directed the work, reviewed every
+change and decided what was published. Fixes were checked in the running game,
+with automated boot tests and by the maintainer playing it, before each
+release. No game code or assets were generated or included.
 
 ---
 

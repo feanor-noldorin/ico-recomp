@@ -1,0 +1,10 @@
+# Exact versions of the recompiler's Python dependencies that built and tested
+# this release (external/ps3recomp/requirements.txt gives lower bounds only).
+# The installer passes this file to pip with -c, so every install resolves the
+# same versions. Update it together with the submodule.
+capstone==5.0.9
+colorama==0.4.6
+construct==2.10.70
+pycryptodome==4.0.0
+tabulate==0.10.0
+tqdm==4.70.1

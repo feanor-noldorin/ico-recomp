@@ -7,7 +7,7 @@
      ps3recomp submodule tree) into build\payload.zip. Only committed files go
      in: `git archive` never picks up local edits, game files or build output.
   2. Publishes the installer as one self-contained exe with the payload embedded.
-  3. Writes the exe's SHA-256 next to it.
+  3. Writes the exe's SHA-256 next to it and to SHA256SUMS.txt (a release asset).
 
   The payload holds no game data, no lifted code and nothing from the PS3
   firmware; those are produced on the user's PC by pipeline\ico_pipeline.py.
@@ -53,5 +53,7 @@ if ($LASTEXITCODE -ne 0) { throw 'dotnet publish failed' }
 $exe = Join-Path $out 'ICO.PC.Port.Setup.exe'
 $hash = (Get-FileHash -Algorithm SHA256 $exe).Hash.ToLower()
 "$hash  ICO.PC.Port.Setup.exe" | Set-Content -Encoding ascii (Join-Path $out 'ICO.PC.Port.Setup.exe.sha256')
+# SHA256SUMS.txt is uploaded next to the exe in each release (sha256sum -c format)
+"$hash  ICO.PC.Port.Setup.exe" | Set-Content -Encoding ascii (Join-Path $out 'SHA256SUMS.txt')
 '{0}  ({1:N1} MB)' -f $exe, ((Get-Item $exe).Length / 1MB)
 "SHA-256 $hash"

@@ -2,6 +2,17 @@
 
 All notable changes to the ICO PC port. Dates are YYYY-MM-DD.
 
+## [0.2.1] — 2026-10-19 — installer and transparency
+
+No change to the game itself; the recompiled game is identical to 0.2.0.
+
+- **Reproducible installs**: `pipeline/constraints.txt` pins the exact
+  versions of the recompiler's Python dependencies this release was built and
+  tested with; the installer passes it to pip with `-c`.
+- **Checksums**: every release now ships `SHA256SUMS.txt` next to the
+  installer (`sha256sum -c SHA256SUMS.txt`).
+- **AI disclosure** section in the README.
+
 ## [0.2.0] — 2026-10-19 — playable at 60 fps
 
 ### Gameplay

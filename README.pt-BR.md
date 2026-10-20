@@ -2,7 +2,7 @@
 
 [English](README.md) · **Português (Brasil)**
 
-> **Status — v0.2.0 (alfa):** inicia até o menu principal, roda a cinemática
+> **Status — v0.2.1 (alfa):** inicia até o menu principal, roda a cinemática
 > de abertura e já é jogável: o Ico anda, escala e conduz a Yorda a **60 fps
 > com a velocidade original do jogo** no PC de desenvolvimento (as
 > cinemáticas mantêm os 30 originais). Controles DualSense / DualShock 4 e
@@ -214,6 +214,18 @@ Para desenvolvedores: veja [docs/BUILDING.md](docs/BUILDING.md).
 3. Teclado + mouse, junto com o controle.
 4. Menu de gráficos: resolução, vsync, filtro anisotrópico, limitador de FPS.
 5. Enviar as correções de runtime para o ps3recomp oficial.
+
+---
+
+## 🤖 Uso de IA
+
+Este port foi desenvolvido com ajuda substancial de um assistente de IA (o
+Claude, da Anthropic, no Claude Code): engenharia reversa do código e dos dados
+do jogo, as correções de runtime, as ferramentas, o instalador e esta
+documentação. Uma pessoa — o mantenedor — conduziu o trabalho, revisou cada
+mudança e decidiu o que foi publicado. As correções foram conferidas no jogo
+rodando, com testes automáticos de boot e jogando, antes de cada release.
+Nenhum código ou asset do jogo foi gerado ou incluído.
 
 ---
 

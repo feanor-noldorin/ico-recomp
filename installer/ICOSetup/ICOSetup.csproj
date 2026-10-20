@@ -10,7 +10,7 @@
     <RootNamespace>ICOSetup</RootNamespace>
     <Product>ICO PC Port</Product>
     <Description>ICO PC Port Setup</Description>
-    <Version>0.2.0</Version>
+    <Version>0.2.1</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
     <!-- One self-contained exe, like the P.T. setup: no .NET install needed. -->
