@@ -878,11 +878,12 @@ static void ex_tick(void)
         fflush(stdout); fflush(stderr);
         TerminateProcess(GetCurrentProcess(), 0);
     }
-    /* The label: look for the texture while a menu is up, re-check it now and
-     * then (a reload brings back the unpatched sheet). */
-    /* A scan hashes up to ~0.5 GB on this thread (~0.4 s), so it runs only
-     * when no copy is known, and after three empty ones it stops: on a sheet
-     * this does not recognise the Exit items simply stay unlinked. */
+    /* The label: while a menu is up, re-check each known copy of the texture
+     * once a second (a reload in place brings back the unpatched sheet) and
+     * forget copies whose memory now holds something else. A scan hashes up
+     * to ~0.5 GB on this thread (~0.4 s), so it runs only when no copy is
+     * known, and stops after three empty ones: on a sheet this does not
+     * recognise, the Exit items simply stay unlinked. */
     static ULONGLONG last = 0, last_scan = 0;
     static int empty_scans = 0;
     const ULONGLONG now = GetTickCount64();
