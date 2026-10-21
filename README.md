@@ -2,7 +2,7 @@
 
 **English** · [Português (Brasil)](README.pt-BR.md)
 
-> **Status — v0.2.2 (alpha):** boots to the title menu, plays the opening
+> **Status — v0.2.3 (alpha):** boots to the title menu, plays the opening
 > cinematic and is playable: Ico walks, climbs and leads Yorda at **60 fps
 > with the game's original speed** on the development PC (cinematics stay at
 > their original 30). DualSense / DualShock 4 and XInput controllers work.
@@ -255,7 +255,7 @@ license) is downloaded from its official release during install.
 
 ## 🔗 Related projects
 
-- [ps3recomp](https://github.com/sp00nznet/ps3recomp) (upstream; this port uses the [`ico-port` branch of the fork](https://github.com/feanor-noldorin/ps3recomp/tree/ico-port)) — the PS3 static recompilation toolkit this port is built on.
+- [ps3recomp](https://github.com/sp00nznet/ps3recomp) (upstream; this port uses the [`ico-port-v0.17` branch of the fork](https://github.com/feanor-noldorin/ps3recomp/tree/ico-port-v0.17), based on v0.17.0) — the PS3 static recompilation toolkit this port is built on.
 - [shadowofthecolossus](https://github.com/sp00nznet/shadowofthecolossus) — sister port from the same collection.
 - [saintsrow2](https://github.com/sp00nznet/saintsrow2) — another ps3recomp port.
 - [RPCS3](https://rpcs3.net) — PS3 emulator; used here to decrypt the executable and provide the firmware.

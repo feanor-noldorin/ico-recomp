@@ -2,7 +2,7 @@
 
 [English](README.md) · **Português (Brasil)**
 
-> **Status — v0.2.2 (alfa):** inicia até o menu principal, roda a cinemática
+> **Status — v0.2.3 (alfa):** inicia até o menu principal, roda a cinemática
 > de abertura e já é jogável: o Ico anda, escala e conduz a Yorda a **60 fps
 > com a velocidade original do jogo** no PC de desenvolvimento (as
 > cinemáticas mantêm os 30 originais). Controles DualSense / DualShock 4 e
@@ -253,7 +253,7 @@ baixado do release oficial durante a instalação.
 
 ## 🔗 Projetos relacionados
 
-- [ps3recomp](https://github.com/sp00nznet/ps3recomp): o toolkit de recompilação estática de PS3 que este port usa.
+- [ps3recomp](https://github.com/sp00nznet/ps3recomp): o toolkit de recompilação estática de PS3 que este port usa (pela branch [`ico-port-v0.17`](https://github.com/feanor-noldorin/ps3recomp/tree/ico-port-v0.17) do fork, baseada na v0.17.0).
 - [shadowofthecolossus](https://github.com/sp00nznet/shadowofthecolossus): port irmão, da mesma coletânea.
 - [saintsrow2](https://github.com/sp00nznet/saintsrow2): outro port com ps3recomp.
 - [RPCS3](https://rpcs3.net): emulador de PS3, usado aqui para decriptar o executável e fornecer o firmware.
