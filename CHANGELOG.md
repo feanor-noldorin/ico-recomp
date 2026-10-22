@@ -9,10 +9,10 @@ All notable changes to the ICO PC port. Dates are YYYY-MM-DD.
   re-applied as six commits on the fork's `ico-port-v0.17` branch; the old
   `ico-port` branch is kept as it was for v0.2.0 to v0.2.2.
 - **FIOS disc cache**: upstream now creates files opened with `O_CREAT`, so
-  ICO keeps its disc cache (about 70 MB, in the install's `vfs\cache`). A
-  cellFs bug (a read right after a write on the same file returned stale
-  data) made that cache unreadable and left the game on a black screen;
-  fixed, with a test.
+  ICO keeps its disc cache in the install's `vfs\cache`; it grows as the
+  game loads data. A cellFs bug (a read right after a write on the same
+  file returned stale data) made that cache unreadable and left the game
+  on a black screen; fixed, with a test.
 - **SPU speed**: an upstream check read an environment variable on every SPU
   DMA channel access. Reading it once restores full speed (intro 14 to 30 fps).
 - **Controllers**: rumble now comes from upstream's handler and is renewed
