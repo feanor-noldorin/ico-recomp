@@ -1,4 +1,4 @@
 [submodule "external/ps3recomp"]
 	path = external/ps3recomp
 	url = https://github.com/feanor-noldorin/ps3recomp.git
-	branch = ico-port-v0.17
+	branch = ico-port-v018

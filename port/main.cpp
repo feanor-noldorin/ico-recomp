@@ -141,6 +141,13 @@ static int64_t (*s_orig_usleep)(ppu_context*) = nullptr;
  * on something the drain may produce (a label, a fence), so drain now rather
  * than at the clock's next ~6.5 ms turn. Experiment for the slowdown. */
 static HANDLE s_fc_wake_ev = NULL;
+/* The runtime calls this when a flip releases the prepare marker the FIFO walker
+ * is holding at (GCM_PREPAREFLIP_QUEUE). The frame clock drains only between its
+ * sleeps, so it is woken at once: on ps3recomp v0.18 the walker reaches the next
+ * frame's marker before the flip, and waiting out the rest of a 4 ms sleep there
+ * made frames miss their vblank (gameplay ~40 fps instead of 60). */
+extern "C" void (*g_gcm_prepare_release_hook)(void);
+static void fc_on_prepare_release(void) { if (s_fc_wake_ev) SetEvent(s_fc_wake_ev); }
 static int    s_skip_mlaa_ppu = -1;   /* ICO_SKIP_MLAA, read once in main() */
 static int    s_fc_wake_on = 0;
 /* Who sleeps: the guest caller (lr) of each usleep and its argument, so the
@@ -930,9 +937,12 @@ static DWORD WINAPI frame_clock(LPVOID)
      * due at tick_q0 + k * freq / 60. */
     LARGE_INTEGER tick_fq; QueryPerformanceFrequency(&tick_fq);
     LONG64 tick_q0 = fc_now(); unsigned long long tick_k = 0;
+    /* The frame clock sleeps on this event: a flip releasing a held prepare
+     * marker sets it (always), and with ICO_FC_WAKE=1 a PPU usleep does too. */
+    s_fc_wake_ev = CreateEventW(NULL, FALSE, FALSE, NULL);   /* auto-reset */
+    if (s_fc_wake_ev) g_gcm_prepare_release_hook = fc_on_prepare_release;
     { const char* e = getenv("ICO_FC_WAKE");
       if (e && atoi(e) > 0) {
-          s_fc_wake_ev = CreateEventW(NULL, FALSE, FALSE, NULL);   /* auto-reset */
           s_fc_wake_on = s_fc_wake_ev != NULL;
           fprintf(stderr, "[ico] ICO_FC_WAKE: frame clock woken by PPU usleep (%s)\n",
                   s_fc_wake_on ? "on" : "event failed");
@@ -940,7 +950,7 @@ static DWORD WINAPI frame_clock(LPVOID)
 
     for (;;) {
         { const LONG64 a = fc_now();
-          if (s_fc_wake_on) WaitForSingleObject(s_fc_wake_ev, 4); else Sleep(4);
+          if (s_fc_wake_ev) WaitForSingleObject(s_fc_wake_ev, 4); else Sleep(4);
           InterlockedAdd64(&s_fc_sleep, fc_now() - a); }
         InterlockedIncrement(&s_fc_iters);
         int fired = 0;
