@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.20)
 project(ICO
-    VERSION 0.2.3
+    VERSION 0.2.4
     LANGUAGES C CXX
     DESCRIPTION "ICO (PS3) recompiled for Windows with ps3recomp"
 )

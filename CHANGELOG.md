@@ -2,6 +2,25 @@
 
 All notable changes to the ICO PC port. Dates are YYYY-MM-DD.
 
+## [0.2.4] — 2026-10-26 — ps3recomp v0.18.0
+
+### Runtime
+- **ps3recomp rebased onto upstream v0.18.0.** The port's runtime fixes are
+  re-applied on the fork's `ico-port-v0.18` branch. Two fixes from 0.2.3 are
+  now upstream: the cellFs read-after-write fix (our sp00nznet/ps3recomp#456)
+  and the SPU environment check (#243).
+- **60 fps kept**: v0.18 processes RSX commands faster, so it reached the
+  next frame's flip point early and waited out the frame clock's sleep there
+  (gameplay dropped to about 40 fps). The frame clock is now woken the moment
+  the flip lands.
+- **Controllers**: upstream's SDL2 hot-plug, so a controller switched off and
+  on again comes back on the same port. XInput is no longer used as a
+  fallback when SDL2 is built (SDL2 reads Xbox pads too); the keyboard still
+  works alongside a controller.
+
+### Notes
+- No `ico.ini` defaults changed.
+
 ## [0.2.3] — 2026-10-21 — ps3recomp v0.17.0
 
 ### Runtime
